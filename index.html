@@ -14,6 +14,17 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Cream Edition Color Filter Definition -->
+  <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
+    <filter id="creamFilter" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="
+        0.26  0     0     0  0.70
+        0     0.25  0     0  0.66
+        0     0     0.23  0  0.58
+        0     0     0     1  0
+      "/>
+    </filter>
+  </svg>
 
   <!-- Top Announcement Bar -->
   <aside class="announcement-bar" aria-label="優惠公告">
@@ -82,6 +93,21 @@
             </div>
           </div>
 
+          <!-- Color Selector Swatches -->
+          <div class="color-picker-group">
+            <span class="color-picker-label">款式配色：<strong id="heroCurrentColorLabel">經典黑 (Classic Black)</strong></span>
+            <div class="color-swatches">
+              <button type="button" class="color-swatch-btn active" data-color="black" aria-label="切換為經典黑">
+                <span class="swatch-circle swatch-black"></span>
+                <span class="swatch-name">經典黑</span>
+              </button>
+              <button type="button" class="color-swatch-btn" data-color="cream" aria-label="切換為復古米白">
+                <span class="swatch-circle swatch-cream"></span>
+                <span class="swatch-name">復古米白</span>
+              </button>
+            </div>
+          </div>
+
           <div class="hero-cta-group">
             <button class="btn-brass btn-open-checkout" data-edition="pro">
               立即訂購高階版 (NT$ 5,990)
@@ -109,7 +135,7 @@
 
         <div class="hero-media-wrap">
           <div class="hero-media-card">
-            <img src="172724851626581.jpg" alt="MOTIF Major 無線耳罩式耳機全景" class="hero-img" width="560" height="560">
+            <img id="heroMainImg" src="172724851626581.jpg" alt="MOTIF Major 無線耳罩式耳機全景" class="hero-img" width="560" height="560">
             <div class="floating-pill floating-pill-1">
               <span>🎧 專屬黃銅多向搖桿控制</span>
             </div>
@@ -261,6 +287,12 @@
               <span class="spin-indicator-dot"></span>
               <span id="spinModeText">360° 自動緩慢旋轉中</span>
             </span>
+
+            <div class="spin-color-mini-toggle">
+              <button type="button" class="btn-color-mini active" data-color="black" title="切換為經典黑">⚫ 經典黑</button>
+              <button type="button" class="btn-color-mini" data-color="cream" title="切換為復古米白">⚪ 復古米白</button>
+            </div>
+
             <span class="spin-angle-indicator" id="spinAngleIndicator">視角：0° (正面視圖)</span>
           </div>
 
@@ -441,6 +473,10 @@
                 <span>Qi 無線充電支援</span>
               </div>
               <div class="pricing-feature-item">
+                <span class="icon">🎨</span>
+                <span>提供 <strong>經典黑 / 復古米白</strong> 雙色現貨自由選</span>
+              </div>
+              <div class="pricing-feature-item">
                 <span class="icon">✓</span>
                 <span>原廠 1 年品質保固</span>
               </div>
@@ -498,6 +534,10 @@
               <div class="pricing-feature-item">
                 <span class="icon">🎁</span>
                 <span>隨附贈送【專屬復古皮質硬殼收納包】(價值 $1,280)</span>
+              </div>
+              <div class="pricing-feature-item">
+                <span class="icon">🎨</span>
+                <span>提供 <strong>經典黑 / 復古米白</strong> 雙色現貨自由選</span>
               </div>
               <div class="pricing-feature-item">
                 <span class="icon">🛡️</span>
@@ -753,7 +793,7 @@
           <img src="172724851626581.jpg" alt="耳機縮圖" class="summary-thumb" width="60" height="60">
           <div class="summary-info">
             <h4 id="summaryEditionName">高階版 (Pro ANC Edition)</h4>
-            <p>顏色：經典黑 (Black) • 宅配免運</p>
+            <p id="summaryColorText">顏色：經典黑 (Classic Black) • 宅配免運</p>
           </div>
           <div class="summary-price" id="summaryTotalPrice">NT$ 5,990</div>
         </div>
@@ -778,6 +818,34 @@
               <div>
                 <strong style="font-size: 0.95rem;">高階版 (推薦)</strong>
                 <div style="font-size: 0.8rem; color: var(--accent-brass);">NT$ 5,990 (主動降噪+無損)</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Color Selector inside modal -->
+        <div class="form-group">
+          <label class="form-label">選擇外觀配色 <span class="req">*</span></label>
+          <div class="form-row-2">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--accent-brass); border-radius: 8px; cursor: pointer; background: #fffdf9;">
+              <input type="radio" name="checkoutColorRadio" value="black" checked>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="swatch-circle swatch-black"></span>
+                <div>
+                  <strong style="font-size: 0.95rem;">經典黑</strong>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">荔枝皮革 / 黃銅旋鈕</div>
+                </div>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border-medium); border-radius: 8px; cursor: pointer;">
+              <input type="radio" name="checkoutColorRadio" value="cream">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="swatch-circle swatch-cream"></span>
+                <div>
+                  <strong style="font-size: 0.95rem;">復古米白</strong>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">溫潤奶油白 / 香檳金配件</div>
+                </div>
               </div>
             </label>
           </div>

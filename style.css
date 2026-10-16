@@ -1953,3 +1953,95 @@ dialog::backdrop {
   color: #ffffff;
   border-color: var(--bg-dark);
 }
+
+
+/* ========================================================= */
+/* Color Selection & Swatches Styling                       */
+/* ========================================================= */
+.color-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.color-picker-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.color-picker-label strong {
+  color: var(--accent-brass);
+}
+.color-swatches {
+  display: flex;
+  gap: 12px;
+}
+.color-swatch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border-medium);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+.color-swatch-btn:hover {
+  border-color: var(--accent-brass);
+  background: var(--bg-warm-tint);
+}
+.color-swatch-btn.active {
+  border-color: var(--accent-brass);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(184, 134, 63, 0.25);
+}
+.swatch-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.swatch-black {
+  background: radial-gradient(circle at 35% 35%, #444 0%, #151413 100%);
+}
+.swatch-cream {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #dfd5c4 100%);
+}
+.swatch-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.spin-color-mini-toggle {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-warm-tint);
+  padding: 4px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+}
+.btn-color-mini {
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+.btn-color-mini:hover {
+  color: var(--text-main);
+}
+.btn-color-mini.active {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cream Filter applied to image */
+.theme-cream-img {
+  filter: url(#creamFilter) !important;
+}

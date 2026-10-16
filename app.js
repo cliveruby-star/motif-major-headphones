@@ -26,7 +26,12 @@ const appState = {
     pro: '172724851626581.jpg'
   },
   activeGateway: 'card', // 'card' | 'ecpay'
-  reviewFilter: 'all'
+  reviewFilter: 'all',
+  selectedColor: 'black', // 'black' | 'cream'
+  colorNames: {
+    black: '經典黑 (Classic Black)',
+    cream: '復古米白 (Vintage Cream)'
+  }
 };
 
 // Data: Three Views Content
@@ -124,6 +129,7 @@ let customerReviews = [
 document.addEventListener('DOMContentLoaded', () => {
   initThreeViews();
   init360Turntable();
+  initColorSwitchers();
   initPricingAndCheckout();
   initReviewsSystem();
   initFaqAccordion();
@@ -345,6 +351,88 @@ function init360Turntable() {
 }
 
 /* ========================================================= */
+/* 1.8. Color Variant Switcher (Classic Black & Vintage Cream) */
+/* ========================================================= */
+function initColorSwitchers() {
+  const swatchBtns = document.querySelectorAll('.color-swatch-btn');
+  const miniBtns = document.querySelectorAll('.btn-color-mini');
+  const checkoutColorRadios = document.querySelectorAll('input[name="checkoutColorRadio"]');
+  const heroColorLabel = document.getElementById('heroCurrentColorLabel');
+
+  function setColor(colorKey) {
+    if (!appState.colorNames[colorKey]) return;
+    appState.selectedColor = colorKey;
+
+    // 1. Update Hero Label
+    if (heroColorLabel) {
+      heroColorLabel.textContent = appState.colorNames[colorKey];
+    }
+
+    // 2. Update Hero Swatches active state
+    swatchBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.color === colorKey);
+    });
+
+    // 3. Update 360 Mini-Toggle buttons active state
+    miniBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.color === colorKey);
+    });
+
+    // 4. Update Checkout modal radio selection
+    checkoutColorRadios.forEach(radio => {
+      if (radio.value === colorKey) {
+        radio.checked = true;
+      }
+    });
+
+    // 5. Apply filter class to images
+    const targetImages = [
+      document.getElementById('heroMainImg'),
+      document.getElementById('viewMainImg'),
+      document.getElementById('spinMainImg'),
+      document.querySelector('.summary-thumb')
+    ];
+
+    targetImages.forEach(img => {
+      if (img) {
+        if (colorKey === 'cream') {
+          img.classList.add('theme-cream-img');
+        } else {
+          img.classList.remove('theme-cream-img');
+        }
+      }
+    });
+
+    // 6. Update order summary text
+    updateOrderSummary();
+  }
+
+  // Hero swatches click
+  swatchBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setColor(btn.dataset.color);
+    });
+  });
+
+  // 360 mini-toggle click
+  miniBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      setColor(btn.dataset.color);
+    });
+  });
+
+  // Checkout modal color radio change
+  checkoutColorRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      setColor(e.target.value);
+    });
+  });
+
+  // Expose helper to window for console/external testing
+  window.setProductColor = setColor;
+}
+
+/* ========================================================= */
 /* 2. Pricing & Checkout System                             */
 /* ========================================================= */
 function initPricingAndCheckout() {
@@ -449,6 +537,9 @@ function openCheckout(edition = 'pro') {
   const radio = document.querySelector(`input[name="checkoutEditionRadio"][value="${edition}"]`);
   if (radio) radio.checked = true;
 
+  const colorRadio = document.querySelector(`input[name="checkoutColorRadio"][value="${appState.selectedColor}"]`);
+  if (colorRadio) colorRadio.checked = true;
+
   const qtyDisplay = document.getElementById('checkoutQtyDisplay');
   if (qtyDisplay) qtyDisplay.textContent = '1';
 
@@ -460,15 +551,18 @@ function openCheckout(edition = 'pro') {
 
 function updateOrderSummary() {
   const edition = appState.selectedEdition;
+  const color = appState.selectedColor;
   const unitPrice = appState.prices[edition];
   const total = unitPrice * appState.quantity;
 
   const nameEl = document.getElementById('summaryEditionName');
+  const colorEl = document.getElementById('summaryColorText');
   const priceEl = document.getElementById('summaryTotalPrice');
   const submitBtnText = document.getElementById('checkoutSubmitBtnText');
   const ecpayTotalNotice = document.getElementById('ecpayTotalNotice');
 
   if (nameEl) nameEl.textContent = appState.editionNames[edition];
+  if (colorEl) colorEl.textContent = `顏色：${appState.colorNames[color]} • 宅配免運`;
   if (priceEl) priceEl.textContent = `NT$ ${total.toLocaleString()}`;
   if (submitBtnText) submitBtnText.textContent = `確認付款 NT$ ${total.toLocaleString()}`;
   if (ecpayTotalNotice) ecpayTotalNotice.textContent = `NT$ ${total.toLocaleString()}`;
@@ -571,7 +665,7 @@ function processInPageCreditCardPayment() {
     const total = appState.prices[edition] * appState.quantity;
 
     document.getElementById('receiptOrderNo').textContent = orderNo;
-    document.getElementById('receiptEdition').textContent = `${appState.editionNames[edition]} × ${appState.quantity}`;
+    document.getElementById('receiptEdition').textContent = `${appState.editionNames[edition]} [${appState.colorNames[appState.selectedColor]}] × ${appState.quantity}`;
     document.getElementById('receiptAmount').textContent = `NT$ ${total.toLocaleString()}`;
     document.getElementById('receiptBuyer').textContent = `${buyerName} (${buyerPhone})`;
 
@@ -646,7 +740,7 @@ async function processEcpayRedirect() {
   const tradeDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const tradeNo = 'MG' + Date.now().toString().slice(-10);
 
-  const itemName = `MOTIF Major ${appState.editionNames[appState.selectedEdition]} x ${appState.quantity}`;
+  const itemName = `MOTIF Major ${appState.editionNames[appState.selectedEdition]} (${appState.colorNames[appState.selectedColor]}) x ${appState.quantity}`;
 
   const ecpayParams = {
     MerchantID: MerchantID,
