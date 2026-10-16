@@ -35,6 +35,7 @@
 
       <nav class="nav-links" aria-label="主要導覽">
         <a href="#views" class="nav-link">三視圖鑑賞</a>
+        <a href="#spin360" class="nav-link">360° 旋轉動態</a>
         <a href="#lifestyle" class="nav-link">全日情境</a>
         <a href="#pricing" class="nav-link">雙版本方案</a>
         <a href="#acoustic" class="nav-link">聲學科技</a>
@@ -236,6 +237,70 @@
                 <h5>VIEW 03: 折疊收納</h5>
                 <p>口袋化設計、隨身收納</p>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 360 Degree Slow Rotation Interactive Section -->
+    <section class="spin-section" id="spin360">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle">360° Slow Turntable Rotation</span>
+          <h2 class="section-title">360° 緩慢旋轉動態賞析</h2>
+          <p class="section-desc">
+            全視角動態展示 MOTIF 耳機的每一個細膩切面。支援 360 度自動緩慢巡航、速度切換與滑鼠/觸控手勢自由拖曳旋轉。
+          </p>
+        </div>
+
+        <div class="spin-turntable-card">
+          <!-- Status Pill -->
+          <div class="spin-status-bar">
+            <span class="spin-status-badge">
+              <span class="spin-indicator-dot"></span>
+              <span id="spinModeText">360° 自動緩慢旋轉中</span>
+            </span>
+            <span class="spin-angle-indicator" id="spinAngleIndicator">視角：0° (正面視圖)</span>
+          </div>
+
+          <!-- Turntable Stage -->
+          <div class="turntable-stage" id="turntableStage" title="左右滑動或拖曳可旋轉耳機">
+            <div class="turntable-pedestal"></div>
+            <div class="turntable-light-ring"></div>
+            
+            <img id="spinMainImg" src="view_front.jpg" alt="MOTIF 耳機 360 度旋轉視圖" class="spin-img" draggable="false">
+
+            <!-- Interactive Drag Overlay -->
+            <div class="turntable-drag-hint" id="turntableDragHint">
+              <span>↔ 按住滑鼠或觸控滑動以任意旋轉</span>
+            </div>
+          </div>
+
+          <!-- Interactive Degree Slider -->
+          <div class="spin-slider-wrap">
+            <input type="range" id="spinScrubber" min="0" max="359" value="0" step="1" aria-label="耳機 360 度旋轉角度調整">
+          </div>
+
+          <!-- Controls Bar -->
+          <div class="spin-controls-bar">
+            <div class="spin-btn-group">
+              <button type="button" class="btn-spin-ctrl" id="btnToggleSpin" aria-label="暫停或播放旋轉">
+                <span id="spinBtnIcon">⏸</span>
+                <span id="spinBtnLabel">暫停旋轉</span>
+              </button>
+              <button type="button" class="btn-spin-ctrl" id="btnToggleSpeed" aria-label="切換旋轉速度">
+                <span id="spinSpeedLabel">速度：緩慢 (0.5x)</span>
+              </button>
+            </div>
+
+            <div class="spin-quick-angles">
+              <button type="button" class="btn-angle-snap active" data-angle="0">正面 0°</button>
+              <button type="button" class="btn-angle-snap" data-angle="45">右前 45°</button>
+              <button type="button" class="btn-angle-snap" data-angle="90">右側 90°</button>
+              <button type="button" class="btn-angle-snap" data-angle="180">背面 180°</button>
+              <button type="button" class="btn-angle-snap" data-angle="270">左側 270°</button>
+              <button type="button" class="btn-angle-snap" data-angle="315">左前 315°</button>
             </div>
           </div>
         </div>

@@ -123,6 +123,7 @@ let customerReviews = [
 // Document Ready
 document.addEventListener('DOMContentLoaded', () => {
   initThreeViews();
+  init360Turntable();
   initPricingAndCheckout();
   initReviewsSystem();
   initFaqAccordion();
@@ -178,6 +179,168 @@ function initThreeViews() {
 
   thumbs.forEach(thumb => {
     thumb.addEventListener('click', () => switchView(thumb.dataset.view));
+  });
+}
+
+/* ========================================================= */
+/* 1.5. 360 Degree Turntable Slow Spin Controller            */
+/* ========================================================= */
+function init360Turntable() {
+  const stage = document.getElementById('turntableStage');
+  const img = document.getElementById('spinMainImg');
+  const scrubber = document.getElementById('spinScrubber');
+  const angleIndicator = document.getElementById('spinAngleIndicator');
+  const modeText = document.getElementById('spinModeText');
+  const dragHint = document.getElementById('turntableDragHint');
+  const btnToggleSpin = document.getElementById('btnToggleSpin');
+  const spinBtnIcon = document.getElementById('spinBtnIcon');
+  const spinBtnLabel = document.getElementById('spinBtnLabel');
+  const btnToggleSpeed = document.getElementById('btnToggleSpeed');
+  const spinSpeedLabel = document.getElementById('spinSpeedLabel');
+  const snapButtons = document.querySelectorAll('.btn-angle-snap');
+
+  if (!stage || !img) return;
+
+  let currentAngle = 0;
+  let isPlaying = true;
+  let speedStep = 0.35; // default smooth slow cruise (~17s per full revolution)
+  let speedLevel = 1;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartAngle = 0;
+  let hasInteracted = false;
+
+  // 8 key rotation zones
+  const angleConfig = [
+    { max: 22.5, src: 'view_front.jpg', flip: false, label: '0° (正面視角)' },
+    { max: 67.5, src: '172724851626581.jpg', flip: false, label: '45° (右前視角)' },
+    { max: 112.5, src: 'view_side.jpg', flip: false, label: '90° (右側面視角)' },
+    { max: 157.5, src: 'view_back.jpg', flip: false, label: '135° (右後方細節)' },
+    { max: 202.5, src: 'view_back.jpg', flip: false, label: '180° (背面視角)' },
+    { max: 247.5, src: 'view_back.jpg', flip: true, label: '225° (左後方細節)' },
+    { max: 292.5, src: 'view_side.jpg', flip: true, label: '270° (左側面視角)' },
+    { max: 337.5, src: '172724851626581.jpg', flip: true, label: '315° (左前視角)' },
+    { max: 360, src: 'view_front.jpg', flip: false, label: '0° (正面視角)' }
+  ];
+
+  function getFrameForAngle(deg) {
+    deg = ((deg % 360) + 360) % 360;
+    for (let c of angleConfig) {
+      if (deg < c.max) return c;
+    }
+    return angleConfig[0];
+  }
+
+  function updateVisual(deg) {
+    const frame = getFrameForAngle(deg);
+    const roundedDeg = Math.round(deg) % 360;
+
+    const currentSrc = img.src.split('/').pop();
+    if (currentSrc !== frame.src) {
+      img.src = frame.src;
+    }
+    img.style.transform = frame.flip ? 'scaleX(-1)' : 'scaleX(1)';
+
+    if (scrubber && document.activeElement !== scrubber) {
+      scrubber.value = roundedDeg;
+    }
+
+    if (angleIndicator) {
+      angleIndicator.textContent = `視角：${roundedDeg}° (${frame.label.split('(')[1] || ''}`;
+    }
+
+    snapButtons.forEach(btn => {
+      const bDeg = parseInt(btn.dataset.angle, 10);
+      const diff = Math.abs(roundedDeg - bDeg);
+      const isNearby = diff <= 20 || diff >= 340;
+      btn.classList.toggle('active', isNearby);
+    });
+  }
+
+  // Animation Loop
+  function loop() {
+    if (isPlaying && !isDragging) {
+      currentAngle = (currentAngle + speedStep) % 360;
+      updateVisual(currentAngle);
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // Drag Interactions (Mouse & Touch)
+  function handleDragStart(clientX) {
+    isDragging = true;
+    dragStartX = clientX;
+    dragStartAngle = currentAngle;
+    if (!hasInteracted && dragHint) {
+      hasInteracted = true;
+      dragHint.style.opacity = '0';
+    }
+  }
+
+  function handleDragMove(clientX) {
+    if (!isDragging) return;
+    const deltaX = clientX - dragStartX;
+    currentAngle = ((dragStartAngle - deltaX * 0.75) % 360 + 360) % 360;
+    updateVisual(currentAngle);
+  }
+
+  function handleDragEnd() {
+    isDragging = false;
+  }
+
+  stage.addEventListener('mousedown', (e) => handleDragStart(e.clientX));
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging) handleDragMove(e.clientX);
+  });
+  window.addEventListener('mouseup', handleDragEnd);
+
+  stage.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) handleDragStart(e.touches[0].clientX);
+  }, { passive: true });
+  window.addEventListener('touchmove', (e) => {
+    if (isDragging && e.touches.length === 1) handleDragMove(e.touches[0].clientX);
+  }, { passive: true });
+  window.addEventListener('touchend', handleDragEnd);
+
+  // Scrubber range input
+  if (scrubber) {
+    scrubber.addEventListener('input', (e) => {
+      currentAngle = parseInt(e.target.value, 10);
+      updateVisual(currentAngle);
+    });
+  }
+
+  // Toggle Spin
+  if (btnToggleSpin) {
+    btnToggleSpin.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      if (spinBtnIcon) spinBtnIcon.textContent = isPlaying ? '⏸' : '▶';
+      if (spinBtnLabel) spinBtnLabel.textContent = isPlaying ? '暫停旋轉' : '啟動慢速旋轉';
+      if (modeText) modeText.textContent = isPlaying ? '360° 自動緩慢旋轉中' : '已手動暫停 (可滑鼠拖曳旋轉)';
+    });
+  }
+
+  // Toggle Speed
+  if (btnToggleSpeed) {
+    const speeds = [
+      { step: 0.18, label: '速度：極慢 (0.2x)' },
+      { step: 0.35, label: '速度：緩慢 (0.5x)' },
+      { step: 0.8, label: '速度：流暢 (1.0x)' }
+    ];
+    btnToggleSpeed.addEventListener('click', () => {
+      speedLevel = (speedLevel + 1) % speeds.length;
+      speedStep = speeds[speedLevel].step;
+      if (spinSpeedLabel) spinSpeedLabel.textContent = speeds[speedLevel].label;
+    });
+  }
+
+  // Snap Buttons
+  snapButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentAngle = parseInt(btn.dataset.angle, 10);
+      updateVisual(currentAngle);
+    });
   });
 }
 

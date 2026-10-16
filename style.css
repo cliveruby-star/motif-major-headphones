@@ -1728,3 +1728,228 @@ dialog::backdrop {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ========================================================= */
+/* 360 Degree Turntable Showcase Section                    */
+/* ========================================================= */
+.spin-section {
+  padding: 90px 0;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-light);
+}
+
+.spin-turntable-card {
+  background: radial-gradient(circle at 50% 40%, #ffffff 0%, #f9f6ef 65%, #ede6d8 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-md);
+  padding: 44px 36px 36px;
+  max-width: 960px;
+  margin-inline: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.spin-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.spin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.spin-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-brass);
+  box-shadow: 0 0 0 0 rgba(184, 134, 63, 0.7);
+  animation: pulse-ring 2s infinite;
+}
+
+.spin-angle-indicator {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--accent-brass);
+  background: var(--bg-warm-tint);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+}
+
+.turntable-stage {
+  position: relative;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+}
+.turntable-stage:active {
+  cursor: grabbing;
+}
+
+.turntable-pedestal {
+  position: absolute;
+  bottom: 40px;
+  width: 340px;
+  height: 75px;
+  background: radial-gradient(ellipse at center, rgba(184, 134, 63, 0.22) 0%, rgba(29, 27, 25, 0.08) 50%, transparent 80%);
+  border-radius: 50%;
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+.turntable-light-ring {
+  position: absolute;
+  bottom: 35px;
+  width: 360px;
+  height: 80px;
+  border: 1.5px dashed rgba(184, 134, 63, 0.35);
+  border-radius: 50%;
+  animation: spin-ring-rotate 30s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin-ring-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-img {
+  width: 100%;
+  max-width: 440px;
+  max-height: 440px;
+  object-fit: contain;
+  filter: drop-shadow(0 25px 30px rgba(29, 27, 25, 0.16));
+  pointer-events: none;
+  user-select: none;
+  transition: transform 0.05s linear;
+}
+
+.turntable-drag-hint {
+  position: absolute;
+  bottom: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(6px);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.spin-slider-wrap {
+  margin: 28px 0 20px;
+  padding: 0 10px;
+}
+
+.spin-slider-wrap input[type="range"] {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border-medium);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.spin-slider-wrap input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c2934b 0%, #9c6e2e 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.spin-slider-wrap input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.spin-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.spin-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-spin-ctrl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+.btn-spin-ctrl:hover {
+  background: var(--bg-warm-tint);
+  border-color: var(--accent-brass);
+}
+
+.spin-quick-angles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-angle-snap {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--bg-warm-tint);
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+.btn-angle-snap:hover {
+  color: var(--text-main);
+  border-color: var(--border-medium);
+}
+.btn-angle-snap.active {
+  background: var(--bg-dark);
+  color: #ffffff;
+  border-color: var(--bg-dark);
+}
