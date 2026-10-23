@@ -184,9 +184,11 @@ function doPost(e) {
       sheet.appendRow(orderRow);
 
       // 1. ★ 發送 LINE 即時推播給店長
+      let lineResult = null;
       try {
-        sendLineNotification(data);
+        lineResult = sendLineNotification(data);
       } catch (lineErr) {
+        lineResult = { ok: false, error: lineErr.toString() };
         Logger.log("LINE 通知發送略過或失敗: " + lineErr.toString());
       }
 
@@ -206,8 +208,10 @@ function doPost(e) {
 
       return buildJsonResponse({
         success: true,
+        version: "2026-10-23-v2.2",
         message: "預訂單已成功寫入 Google 試算表，並已發送 LINE 與 Email 通知",
-        orderId: data.order_id
+        orderId: data.order_id,
+        lineStatus: lineResult
       });
     }
 
@@ -294,7 +298,38 @@ function doGet(e) {
     }
 
     if (action === "ping") {
-      return buildJsonResponse({ success: true, message: "MOTIF GAS API 運作正常", timestamp: new Date() });
+      return buildJsonResponse({ 
+        success: true, 
+        version: "2026-10-23-v2.2-LINE-READY", 
+        message: "MOTIF GAS API 運作正常 (LINE 模組就緒)", 
+        timestamp: new Date() 
+      });
+    }
+
+    if (action === "testLine") {
+      const dummyOrder = {
+        order_id: "PRE" + Date.now().toString().slice(-8),
+        created_at: Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss"),
+        product_edition: "pro",
+        edition_name: "高階版 (Pro ANC Edition)",
+        color: "cream",
+        color_name: "復古米白 (Vintage Cream)",
+        unit_price: 5990,
+        quantity: 1,
+        total_amount: 5990,
+        buyer_name: "LINE 連線診斷測試",
+        buyer_phone: "0912-345-678",
+        buyer_address: "台北市信義區松仁路 100 號",
+        buyer_email: "test@example.com",
+        payment_method: "黑貓貨到付款",
+        order_notes: "透過 GET ?action=testLine 觸發之測試訊息"
+      };
+      const lineRes = sendLineNotification(dummyOrder);
+      return buildJsonResponse({
+        success: true,
+        action: "testLine",
+        lineResult: lineRes
+      });
     }
 
     return buildJsonResponse({ success: false, error: "未知的 GET action: " + action });
@@ -309,31 +344,38 @@ function doGet(e) {
 function sendLineNotification(data) {
   if (!LINE_CONFIG.enabled || !LINE_CONFIG.channelAccessToken || !LINE_CONFIG.userId) {
     Logger.log("⚠️ LINE 通知尚未填入 channelAccessToken 或 userId，略過推播。");
-    return;
+    return { ok: false, error: "MISSING_CREDENTIALS" };
   }
 
   const lineUrl = "https://api.line.me/v2/bot/message/push";
 
+  let sheetUrl = "";
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) sheetUrl = ss.getUrl();
+  } catch (e) {
+    sheetUrl = "";
+  }
+
   const messageText = 
     "🎧【MOTIF Sound Lab】官方新預約成立！\n" +
     "━━━━━━━━━━━━━━━━━━\n" +
-    "📋 預訂編號：" + data.order_id + "\n" +
-    "⏰ 下單時間：" + data.created_at + "\n" +
+    "📋 預訂編號：" + (data.order_id || "") + "\n" +
+    "⏰ 下單時間：" + (data.created_at || "") + "\n" +
     "\n" +
-    "📦 預訂商品：" + data.edition_name + "\n" +
-    "🎨 款式配色：" + data.color_name + "\n" +
-    "🔢 預訂數量：" + data.quantity + " 台\n" +
-    "💰 預估金額：NT$ " + Number(data.total_amount).toLocaleString() + " (早鳥免運)\n" +
+    "📦 預訂商品：" + (data.edition_name || "") + "\n" +
+    "🎨 款式配色：" + (data.color_name || "") + "\n" +
+    "🔢 預訂數量：" + (data.quantity || 1) + " 台\n" +
+    "💰 預估金額：NT$ " + Number(data.total_amount || 0).toLocaleString() + " (早鳥免運)\n" +
     "🚚 付款方式：" + (data.payment_method || "黑貓貨到付款") + "\n" +
     "━━━━━━━━━━━━━━━━━━\n" +
-    "👤 預訂姓名：" + data.buyer_name + "\n" +
-    "📞 聯絡手機：" + data.buyer_phone + "\n" +
-    "📍 配送地址：" + data.buyer_address + "\n" +
-    "✉️ 電子信箱：" + data.buyer_email + "\n" +
+    "👤 預訂姓名：" + (data.buyer_name || "") + "\n" +
+    "📞 聯絡手機：" + (data.buyer_phone || "") + "\n" +
+    "📍 配送地址：" + (data.buyer_address || "") + "\n" +
+    "✉️ 電子信箱：" + (data.buyer_email || "") + "\n" +
     "📝 預約備註：" + (data.order_notes || "無") + "\n" +
     "━━━━━━━━━━━━━━━━━━\n" +
-    "📊 請開啟 Google 試算表檢視出貨排程：\n" +
-    SpreadsheetApp.getActiveSpreadsheet().getUrl();
+    (sheetUrl ? ("📊 請開啟 Google 試算表檢視出貨排程：\n" + sheetUrl) : "📊 Google 試算表排程已同步更新！");
 
   const payload = {
     to: LINE_CONFIG.userId,
@@ -355,8 +397,16 @@ function sendLineNotification(data) {
     muteHttpExceptions: true
   };
 
-  const response = UrlFetchApp.fetch(lineUrl, options);
-  Logger.log("LINE 推播回應: " + response.getContentText());
+  try {
+    const response = UrlFetchApp.fetch(lineUrl, options);
+    const code = response.getResponseCode();
+    const content = response.getContentText();
+    Logger.log("LINE 推播回應 [" + code + "]: " + content);
+    return { ok: code === 200, code: code, response: content };
+  } catch (err) {
+    Logger.log("LINE 推播例外錯誤: " + err.toString());
+    return { ok: false, error: err.toString() };
+  }
 }
 
 /**
