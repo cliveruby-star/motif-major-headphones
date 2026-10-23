@@ -4,31 +4,24 @@
  * ==============================================================================
  * 
  * 【功能說明】
- * 1. 自動初始化與格式化 Google 試算表（Orders 訂單總表、Reviews 評價總表）
- * 2. 接收前台購物車結帳資料 (doPost)，記錄訂單明細至 Orders 工作表
- * 3. 接收前台顧客評價回饋 (doPost)，記錄顧客心得至 Reviews 工作表
- * 4. 支援前台動態讀取已通過審核的顧客評價 (doGet)
- * 5. 訂單成立時自動發送 Gmail 通知信給管理者信箱 (通知有新訂單進來)
+ * 1. 自動初始化與格式化 Google 試算表（Orders 預訂總表、Reviews 評價總表）
+ * 2. 接收前台線上預訂資料 (doPost)，記錄預約明細至 Orders 工作表
+ * 3. ★【新功能】預訂成功後，系統自動發送「預訂確認 Email」給訂購人（顧客）
+ * 4. 同步發送新訂單通知信給管理員 (店長)
+ * 5. 接收前台顧客評價回饋 (doPost)，記錄顧客心得至 Reviews 工作表
+ * 6. 支援前台動態讀取已通過審核的顧客評價 (doGet)
  * 
  * ------------------------------------------------------------------------------
- * 【如何使用本檔案？ 快速 5 步驟教學】
+ * 【如何更新已發布的 Google Apps Script？ (只需 1 分鐘)】
  * ------------------------------------------------------------------------------
- * 步驟 1. 開啟您的 Google 雲端硬碟，新增一個「Google 試算表」(例如命名為：MOTIF 耳機官方資料庫)。
- * 步驟 2. 在試算表上方選單點選【擴充功能】 > 【Apps Script】。
- * 步驟 3. 清空 Apps Script 編輯器內原本的所有文字，將本檔案「全選 (Ctrl+A) > 複製 > 貼上 (Ctrl+V)」。
- * 步驟 4. 首次執行初始化：
- *         - 在上方工具列的函式下拉選單中選擇「setupDatabase」。
- *         - 點擊「執行 (Run)」，此時 Google 會提示授權，依序點擊「審查權限」> 選擇您的 Google 帳號 > 
- *           「進階 (Advanced)」 >「前往 (不安全)」>「允許」。
- *         - 執行完成後，返回試算表即可看見【Orders】與【Reviews】兩個設計精美的工作表標題。
- * 步驟 5. 發布為 Web 應用程式 (Web App)：
- *         - 點選右上角藍色的【部署 (Deploy)】 > 【新增部署 (New deployment)】。
- *         - 點擊齒輪圖示，選擇【網頁應用程式 (Web app)】。
- *         - 說明：輸入「v1 正式上線」。
- *         - 執行身分：選擇「我 (您的 Email)」。
- *         - 誰可以存取：務必選擇【任何人 (Anyone)】（重要！否則訪客瀏覽器無法寫入）。
- *         - 點擊「部署」，複製產生的【網頁應用程式網址】(結尾為 /exec)。
- * 步驟 6. 將複製的網址貼到前端 app.js 中的 GAS_CONFIG.apiUrl 即可完成對接！
+ * 步驟 1. 開啟您的 Google 試算表，點選【擴充功能】 > 【Apps Script】。
+ * 步驟 2. 清空原本的程式碼，將本檔案「全選 (Ctrl+A) > 複製 > 貼上 (Ctrl+V)」，按 Ctrl+S 存檔。
+ * 步驟 3. 部署最新版本（關鍵步驟！）：
+ *         - 點擊右上角藍色按鈕旁邊的【部署】 > 選擇【管理部署作業 (Manage deployments)】。
+ *         - 在左側點選您目前的 Web 應用程式，點擊右上角的【編輯 (鉛筆圖示)】。
+ *         - 在「版本」下拉選單中，務必選擇【新版本 (New version)】！
+ *         - 點擊右下角【部署】完成更新。
+ *         - 如此一來，目前的 Web App 網址無須更換，就會立即套用自動寄信給顧客的新功能！
  * ==============================================================================
  */
 
@@ -45,7 +38,7 @@ function setupDatabase() {
   const ss = getDb();
 
   // ----------------------------------------------------------------------------
-  // A. 建立/設定 Orders 訂單工作表
+  // A. 建立/設定 Orders 預訂總表
   // ----------------------------------------------------------------------------
   let orderSheet = ss.getSheetByName("Orders");
   if (!orderSheet) {
@@ -55,9 +48,9 @@ function setupDatabase() {
   orderSheet.setTabColor("#b8863f");
 
   const orderHeaders = [
-    "訂單編號", "下單時間", "商品版本", "版本名稱", "款式配色", "配色名稱", 
-    "商品單價", "訂購數量", "訂單總金額", "收件人姓名", "聯絡手機", "收件地址", 
-    "電子信箱", "付款管道", "卡號遮罩/交易序號", "付款狀態", "出貨狀態", "物流單號", "訂單備註"
+    "預訂編號", "預訂時間", "商品版本", "版本名稱", "款式配色", "配色名稱", 
+    "商品單價", "預訂數量", "預估總金額", "預訂人姓名", "聯絡手機", "配送地址", 
+    "電子信箱", "付款方式", "處理標記", "預約狀態", "出貨狀態", "物流單號", "預約備註"
   ];
 
   orderSheet.getRange(1, 1, 1, orderHeaders.length)
@@ -72,7 +65,7 @@ function setupDatabase() {
   orderSheet.setRowHeight(1, 36);
 
   // 設定建議欄寬
-  const orderColWidths = [160, 160, 110, 190, 110, 190, 100, 90, 110, 120, 130, 260, 200, 130, 180, 110, 110, 140, 180];
+  const orderColWidths = [160, 160, 110, 190, 110, 190, 100, 90, 110, 120, 130, 260, 200, 160, 140, 140, 110, 140, 200];
   orderColWidths.forEach((w, idx) => orderSheet.setColumnWidth(idx + 1, w));
 
   // ----------------------------------------------------------------------------
@@ -103,7 +96,7 @@ function setupDatabase() {
   const reviewColWidths = [160, 160, 140, 90, 120, 190, 150, 340, 120, 110];
   reviewColWidths.forEach((w, idx) => reviewSheet.setColumnWidth(idx + 1, w));
 
-  // 預先寫入幾筆展示評價 (避免資料庫初次為空)
+  // 預先寫入展示評價
   const sampleReviews = [
     [
       "REV_1001", "2026/10/12 14:20:00", "林映晨 (Chen L.)", 5, "pro", "購買：高階版 (Pro ANC)",
@@ -128,7 +121,7 @@ function setupDatabase() {
 }
 
 /**
- * 2. 接收前端 POST 請求 (建立訂單 / 新增評價)
+ * 2. 接收前端 POST 請求 (建立預訂單 / 新增評價)
  */
 function doPost(e) {
   try {
@@ -142,7 +135,7 @@ function doPost(e) {
     const ss = getDb();
 
     // ==========================================================================
-    // ACTION 1: 建立訂單 (createOrder)
+    // ACTION 1: 建立預訂單 (createOrder)
     // ==========================================================================
     if (action === "createOrder") {
       let sheet = ss.getSheetByName("Orders");
@@ -152,7 +145,7 @@ function doPost(e) {
       }
 
       const orderRow = [
-        data.order_id || ("EC" + Date.now().toString().slice(-8)),
+        data.order_id || ("PRE" + Date.now().toString().slice(-8)),
         data.created_at || Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss"),
         data.product_edition || "pro",
         data.edition_name || "高階版 (Pro ANC Edition)",
@@ -165,26 +158,33 @@ function doPost(e) {
         data.buyer_phone || "",
         data.buyer_address || "",
         data.buyer_email || "",
-        data.payment_method || "credit_card",
-        data.masked_card || "N/A",
-        data.payment_status || "PAID",
+        data.payment_method || "貨到付款 (免預先刷卡)",
+        data.masked_card || "線上預訂免刷卡",
+        data.payment_status || "預訂成功 (到貨付款)",
         "PENDING", // 預設出貨狀態：待出貨
         "",        // 預留物流單號
-        data.order_notes || ""
+        data.order_notes || "無特殊備註"
       ];
 
       sheet.appendRow(orderRow);
 
-      // 非同步發送通知信給管理員 (可選功能)
+      // 1. 發送「訂單確認信」給預訂人 (顧客)
+      try {
+        sendCustomerConfirmationEmail(data);
+      } catch (custMailErr) {
+        Logger.log("寄送顧客確認信略過或失敗: " + custMailErr.toString());
+      }
+
+      // 2. 發送通知信給店長 (管理員)
       try {
         notifyOwnerNewOrder(data);
-      } catch (mailErr) {
-        Logger.log("通知信發送略過或失敗: " + mailErr.toString());
+      } catch (ownerMailErr) {
+        Logger.log("通知店長信件略過或失敗: " + ownerMailErr.toString());
       }
 
       return buildJsonResponse({
         success: true,
-        message: "訂單已成功寫入 Google 試算表",
+        message: "預訂單已成功寫入 Google 試算表，並已發送確認信給顧客",
         orderId: data.order_id
       });
     }
@@ -208,7 +208,7 @@ function doPost(e) {
         data.edition_name || "高階版 (Pro ANC Edition)",
         data.scenario_tag || "日常推薦",
         data.review_comment || "",
-        "APPROVED", // 預設審核狀態：直接通過 (若想人工審核可改為 PENDING)
+        "APPROVED", // 預設審核狀態：直接通過
         true        // 已驗證購買
       ];
 
@@ -251,12 +251,10 @@ function doGet(e) {
       }
 
       const reviews = [];
-      // 從第二列開始讀取資料 (略過第 1 列標題)
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         const status = String(row[8]).trim().toUpperCase();
 
-        // 僅輸出審核通過 (APPROVED) 的評價
         if (status === "APPROVED" || status === "已發布") {
           reviews.push({
             id: row[0],
@@ -272,9 +270,7 @@ function doGet(e) {
         }
       }
 
-      // 依照時間降冪排列 (最新的在最前面)
       reviews.reverse();
-
       return buildJsonResponse({ success: true, count: reviews.length, reviews: reviews });
     }
 
@@ -290,38 +286,164 @@ function doGet(e) {
 }
 
 /**
- * 輔助函式：發送新訂單通知信給試算表擁有者
+ * ★ 核心功能：發送精美預訂確認信給顧客 (預訂人)
+ */
+function sendCustomerConfirmationEmail(data) {
+  const customerEmail = data.buyer_email ? String(data.buyer_email).trim() : "";
+  if (!customerEmail || !customerEmail.includes("@")) {
+    Logger.log("顧客未填寫有效 Email，略過寄送確認信。");
+    return;
+  }
+
+  const subject = `【MOTIF Sound Lab】預約確認通知：${data.buyer_name} 您好，我們已收到您的耳機預訂單（編號：${data.order_id}）`;
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #faf7f2; margin: 0; padding: 24px 12px; color: #292524;">
+      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e7e5e4; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+        
+        <!-- Header -->
+        <div style="background-color: #1c1917; color: #ffffff; padding: 32px 24px; text-align: center;">
+          <h1 style="color: #b8863f; font-size: 26px; font-weight: 800; letter-spacing: 2px; margin: 0;">MOTIF SOUND LAB</h1>
+          <div style="color: #a8a29e; font-size: 13px; margin-top: 6px; letter-spacing: 1px;">BRITISH ROCK HERITAGE × NORDIC MINIMALISM</div>
+        </div>
+
+        <!-- Body Content -->
+        <div style="padding: 32px 28px; line-height: 1.65;">
+          <div style="font-size: 17px; font-weight: 700; color: #1c1917; margin-bottom: 12px;">
+            親愛的 ${data.buyer_name} 您好：
+          </div>
+          <p style="color: #57534e; font-size: 14.5px; margin-bottom: 24px;">
+            非常感謝您在 MOTIF 官方網站預訂 <strong>MOTIF Major 旗艦無線耳罩式耳機</strong>。我們已成功將您的預訂資料登錄至官方資料庫中，並為您優先保留首批現貨出貨名額！
+          </p>
+
+          <div style="text-align: center; margin-bottom: 24px;">
+            <span style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 13.5px; border: 1px solid #fde68a;">
+              ✓ 官方預訂成功 • 首批現貨優先保留
+            </span>
+          </div>
+
+          <!-- Receipt Details Table -->
+          <div style="background-color: #faf7f2; border: 1px solid #f5ede0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c; width: 35%;">預訂編號</td>
+                <td style="padding: 9px 0; color: #1c1917; width: 65%; font-weight: 700; text-align: right; font-family: monospace; letter-spacing: 1px;">${data.order_id}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">預訂時間</td>
+                <td style="padding: 9px 0; color: #1c1917; text-align: right;">${data.created_at}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">預訂商品</td>
+                <td style="padding: 9px 0; color: #1c1917; font-weight: 600; text-align: right;">${data.edition_name}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">款式配色</td>
+                <td style="padding: 9px 0; color: #1c1917; font-weight: 600; text-align: right;">${data.color_name}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">預訂數量</td>
+                <td style="padding: 9px 0; color: #1c1917; text-align: right;">${data.quantity} 台</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">配送物流</td>
+                <td style="padding: 9px 0; color: #22c55e; font-weight: 600; text-align: right;">黑貓宅急便（早鳥免運費 NT$ 0）</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">付款方式</td>
+                <td style="padding: 9px 0; color: #1c1917; text-align: right;">${data.payment_method || '黑貓貨到付款 (免預先刷卡)'}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">聯絡電話</td>
+                <td style="padding: 9px 0; color: #1c1917; text-align: right;">${data.buyer_phone}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">配送地址</td>
+                <td style="padding: 9px 0; color: #1c1917; text-align: right;">${data.buyer_address}</td>
+              </tr>
+              ${data.order_notes ? `
+              <tr style="border-bottom: 1px solid #f0e6d6;">
+                <td style="padding: 9px 0; color: #78716c;">預約備註</td>
+                <td style="padding: 9px 0; color: #1c1917; text-align: right;">${data.order_notes}</td>
+              </tr>` : ''}
+              <tr>
+                <td style="padding: 12px 0 4px; color: #1c1917; font-size: 15px; font-weight: 700;">預估結算總額</td>
+                <td style="padding: 12px 0 4px; color: #b8863f; font-size: 20px; font-weight: 800; text-align: right;">NT$ ${Number(data.total_amount).toLocaleString()}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Notice Box -->
+          <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 14px 16px; border-radius: 4px; font-size: 13.5px; color: #166534; line-height: 1.65; margin-bottom: 24px;">
+            <strong>📦 首批到貨與配送說明：</strong><br>
+            1. 本次預約<strong>無需預先刷卡扣款</strong>，保障您的資金與交易安全。<br>
+            2. 首批現貨抵台檢驗完成後，客服專員將於出貨前以<strong>簡訊或電話</strong>向您聯繫確認配送時段。<br>
+            3. 所有耳機均享有台灣原廠保固與 7 天猶豫期完整售後服務。
+          </div>
+
+          <p style="font-size: 13px; color: #78716c; margin-top: 20px; line-height: 1.6;">
+            若您需要修改配送地址或有任何疑問，歡迎隨時直接回覆此封信件，我們的客服專員將儘速為您服務。
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f5f5f4; padding: 22px 20px; text-align: center; color: #a8a29e; font-size: 12px; border-top: 1px solid #e7e5e4;">
+          © 2026 MOTIF Sound Lab. All Rights Reserved.<br>
+          台北市信義區聲學設計實驗室 • 客服專線：0800-888-999
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  MailApp.sendEmail({
+    to: customerEmail,
+    subject: subject,
+    htmlBody: htmlBody,
+    name: "MOTIF Sound Lab 官方旗艦店"
+  });
+}
+
+/**
+ * 輔助函式：發送新訂單通知信給試算表擁有者 (店長)
  */
 function notifyOwnerNewOrder(data) {
   const recipient = Session.getEffectiveUser().getEmail();
   if (!recipient) return;
 
-  const subject = `【MOTIF 官網新訂單通知】編號：${data.order_id} - ${data.buyer_name} 同學已下單 NT$ ${Number(data.total_amount).toLocaleString()}`;
+  const subject = `【MOTIF 官網新預訂】編號：${data.order_id} - ${data.buyer_name} 已預約 NT$ ${Number(data.total_amount).toLocaleString()}`;
   const htmlBody = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e7e5e4; border-radius: 8px; overflow: hidden;">
       <div style="background-color: #1c1917; color: #b8863f; padding: 20px; text-align: center;">
-        <h2 style="margin: 0; font-size: 1.4rem;">🎧 MOTIF Major 官方網站 - 新訂單成立！</h2>
+        <h2 style="margin: 0; font-size: 1.4rem;">🎧 MOTIF Major 官方網站 - 新預約單成立！</h2>
       </div>
       <div style="padding: 24px; color: #292524; line-height: 1.6;">
-        <p>您好！官網剛收到一筆新耳機訂購單，明細如下：</p>
+        <p>店長您好！官網剛收到一筆新預約單，明細如下：</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">訂單編號</td><td><strong>${data.order_id}</strong></td></tr>
-          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">訂購商品</td><td>${data.edition_name}</td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">預訂編號</td><td><strong>${data.order_id}</strong></td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">預約商品</td><td>${data.edition_name}</td></tr>
           <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">款式配色</td><td>${data.color_name}</td></tr>
           <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">數量與單價</td><td>${data.quantity} 台 (單價 NT$ ${Number(data.unit_price).toLocaleString()})</td></tr>
           <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">結帳總金額</td><td><strong style="color: #b8863f; font-size: 1.1rem;">NT$ ${Number(data.total_amount).toLocaleString()}</strong></td></tr>
-          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">付款方式</td><td>${data.payment_method === 'credit_card' ? '信用卡在線刷卡' : '綠界科技 ECPay'}</td></tr>
-          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">收件人姓名</td><td>${data.buyer_name}</td></tr>
-          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">收件手機</td><td>${data.buyer_phone}</td></tr>
-          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">寄送地址</td><td>${data.buyer_address}</td></tr>
-          <tr><td style="padding: 8px 0; color: #78716c;">收件信箱</td><td>${data.buyer_email}</td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">付款方式</td><td>${data.payment_method}</td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">預訂人姓名</td><td>${data.buyer_name}</td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">聯絡手機</td><td>${data.buyer_phone}</td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">配送地址</td><td>${data.buyer_address}</td></tr>
+          <tr style="border-bottom: 1px solid #f5f5f4;"><td style="padding: 8px 0; color: #78716c;">電子信箱</td><td>${data.buyer_email}</td></tr>
+          <tr><td style="padding: 8px 0; color: #78716c;">預約備註</td><td>${data.order_notes || "無"}</td></tr>
         </table>
         <div style="margin-top: 24px; text-align: center;">
           <a href="${SpreadsheetApp.getActiveSpreadsheet().getUrl()}" style="background-color: #b8863f; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">打開 Google 試算表檢視</a>
         </div>
       </div>
       <div style="background-color: #f5f5f4; color: #a8a29e; text-align: center; padding: 12px; font-size: 0.8rem;">
-        此信件由 MOTIF 官網 Google Apps Script 自動寄出
+        已同步發送【預約確認信】至顧客信箱 (${data.buyer_email})
       </div>
     </div>
   `;
@@ -329,7 +451,8 @@ function notifyOwnerNewOrder(data) {
   MailApp.sendEmail({
     to: recipient,
     subject: subject,
-    htmlBody: htmlBody
+    htmlBody: htmlBody,
+    name: "MOTIF Sound Lab 官網系統"
   });
 }
 
