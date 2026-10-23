@@ -38,9 +38,8 @@ const appState = {
 // Google Apps Script (GAS) Backend Database Configuration
 // =========================================================
 const GAS_CONFIG = {
-  // 請在此填入部署 Web App 取得的網址 (結尾通常為 /exec)
-  // 亦可於瀏覽器 Console 執行 localStorage.setItem('MOTIF_GAS_API_URL', '您的GAS網址') 進行即時串接
-  apiUrl: localStorage.getItem('MOTIF_GAS_API_URL') || '',
+  // Google Apps Script Web App 正式網址
+  apiUrl: 'https://script.google.com/macros/s/AKfycbymcZNcbBn7v8vRjcBK3BN2337bQJnIuao9Hqnx86KaxWTqBFIABfKY8aXRX3aCIG6S/exec',
   enableEmailNotify: true
 };
 
