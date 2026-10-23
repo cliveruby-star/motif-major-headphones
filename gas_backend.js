@@ -6,24 +6,39 @@
  * 【功能說明】
  * 1. 自動初始化與格式化 Google 試算表（Orders 預訂總表、Reviews 評價總表）
  * 2. 接收前台線上預訂資料 (doPost)，記錄預約明細至 Orders 工作表
- * 3. ★【新功能】預訂成功後，系統自動發送「預訂確認 Email」給訂購人（顧客）
- * 4. 同步發送新訂單通知信給管理員 (店長)
- * 5. 接收前台顧客評價回饋 (doPost)，記錄顧客心得至 Reviews 工作表
- * 6. 支援前台動態讀取已通過審核的顧客評價 (doGet)
+ * 3. ★【新功能】每當有新預訂時，立即發送 LINE 即時通知 (LINE Messaging API Flex Message)
+ * 4. 預訂成功後，系統自動發送「預訂確認 Email」給訂購人（顧客）
+ * 5. 同步發送 Gmail 通知信給管理員 (店長)
+ * 6. 接收前台顧客評價回饋 (doPost)，記錄顧客心得至 Reviews 工作表
+ * 7. 支援前台動態讀取已通過審核的顧客評價 (doGet)
  * 
  * ------------------------------------------------------------------------------
- * 【如何更新已發布的 Google Apps Script？ (只需 1 分鐘)】
+ * 【LINE 通知設定 4 步驟教學】
  * ------------------------------------------------------------------------------
- * 步驟 1. 開啟您的 Google 試算表，點選【擴充功能】 > 【Apps Script】。
- * 步驟 2. 清空原本的程式碼，將本檔案「全選 (Ctrl+A) > 複製 > 貼上 (Ctrl+V)」，按 Ctrl+S 存檔。
- * 步驟 3. 部署最新版本（關鍵步驟！）：
- *         - 點擊右上角藍色按鈕旁邊的【部署】 > 選擇【管理部署作業 (Manage deployments)】。
- *         - 在左側點選您目前的 Web 應用程式，點擊右上角的【編輯 (鉛筆圖示)】。
- *         - 在「版本」下拉選單中，務必選擇【新版本 (New version)】！
- *         - 點擊右下角【部署】完成更新。
- *         - 如此一來，目前的 Web App 網址無須更換，就會立即套用自動寄信給顧客的新功能！
+ * 步驟 1. 前往 LINE Developers Console (https://developers.line.biz/) 並登入個人 LINE。
+ * 步驟 2. 建立 Provider (如：MOTIF) 並建立一個「Messaging API」Channel (官方帳號，名稱可叫「MOTIF 訂單秘書」)。
+ * 步驟 3. 掃描該 Channel 的 QR Code，將機器人加為好友（機器人才能發私訊給您！）。
+ * 步驟 4. 取得兩組金鑰並貼入下方 LINE_CONFIG：
+ *         - 在「Messaging API」分頁最下方：點選 Channel access token 的「Issue (發行)」，複製整段 Token。
+ *         - 在「Basic settings」分頁最下方：找到「Your user ID」(以 U 開頭的 33 碼字串)。
+ * 步驟 5. 貼入下方 LINE_CONFIG 後，可在上方下拉選單選擇「testLineNotification」點擊「執行」，
+ *         您的手機 LINE 就會立刻收到一則高質感的訂單測試卡片！
  * ==============================================================================
  */
+
+// ==============================================================================
+// ★ LINE 即時通知設定 (請填入您的金鑰)
+// ==============================================================================
+const LINE_CONFIG = {
+  // 1. 請填入 LINE Messaging API 的 Channel Access Token (長字串)
+  channelAccessToken: "", 
+
+  // 2. 請填入您的 LINE User ID (可在 LINE Developers 基本設定找到，以 U 開頭)
+  userId: "",
+
+  // 3. 是否啟用 LINE 通知 (設為 true 啟用)
+  enabled: true
+};
 
 // 取得當前試算表
 function getDb() {
@@ -168,14 +183,21 @@ function doPost(e) {
 
       sheet.appendRow(orderRow);
 
-      // 1. 發送「訂單確認信」給預訂人 (顧客)
+      // 1. ★ 發送 LINE 即時推播給店長
+      try {
+        sendLineNotification(data);
+      } catch (lineErr) {
+        Logger.log("LINE 通知發送略過或失敗: " + lineErr.toString());
+      }
+
+      // 2. 發送「訂單確認信」給預訂人 (顧客)
       try {
         sendCustomerConfirmationEmail(data);
       } catch (custMailErr) {
         Logger.log("寄送顧客確認信略過或失敗: " + custMailErr.toString());
       }
 
-      // 2. 發送通知信給店長 (管理員)
+      // 3. 發送 Gmail 通知信給店長 (管理員)
       try {
         notifyOwnerNewOrder(data);
       } catch (ownerMailErr) {
@@ -184,7 +206,7 @@ function doPost(e) {
 
       return buildJsonResponse({
         success: true,
-        message: "預訂單已成功寫入 Google 試算表，並已發送確認信給顧客",
+        message: "預訂單已成功寫入 Google 試算表，並已發送 LINE 與 Email 通知",
         orderId: data.order_id
       });
     }
@@ -236,9 +258,6 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "getReviews";
     const ss = getDb();
 
-    // ==========================================================================
-    // ACTION: 取得審核通過的心得評價 (getReviews)
-    // ==========================================================================
     if (action === "getReviews") {
       const sheet = ss.getSheetByName("Reviews");
       if (!sheet) {
@@ -274,7 +293,6 @@ function doGet(e) {
       return buildJsonResponse({ success: true, count: reviews.length, reviews: reviews });
     }
 
-    // 系統健康檢查
     if (action === "ping") {
       return buildJsonResponse({ success: true, message: "MOTIF GAS API 運作正常", timestamp: new Date() });
     }
@@ -286,7 +304,230 @@ function doGet(e) {
 }
 
 /**
- * ★ 核心功能：發送精美預訂確認信給顧客 (預訂人)
+ * ★ 核心功能 1：發送 LINE 即時通知 (LINE Messaging API Flex Message)
+ */
+function sendLineNotification(data) {
+  if (!LINE_CONFIG.enabled || !LINE_CONFIG.channelAccessToken || !LINE_CONFIG.userId) {
+    Logger.log("⚠️ LINE 通知尚未填入 channelAccessToken 或 userId，略過推播。");
+    return;
+  }
+
+  const lineUrl = "https://api.line.me/v2/bot/message/push";
+
+  // 製作 MOTIF 黑金品牌風格的 Flex Message 卡片
+  const flexBubble = {
+    type: "bubble",
+    size: "mega",
+    header: {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: "#1c1917",
+      paddingAll: "20px",
+      contents: [
+        {
+          type: "text",
+          text: "MOTIF SOUND LAB",
+          color: "#b8863f",
+          weight: "bold",
+          size: "xs",
+          letterSpacing: "2px"
+        },
+        {
+          type: "text",
+          text: "🎧 官網新預約通知！",
+          color: "#ffffff",
+          weight: "bold",
+          size: "xl",
+          margin: "sm"
+        }
+      ]
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: "#faf7f2",
+      paddingAll: "20px",
+      contents: [
+        {
+          type: "box",
+          layout: "horizontal",
+          contents: [
+            { type: "text", text: "預訂編號", color: "#78716c", size: "sm", flex: 3 },
+            { type: "text", text: data.order_id, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
+          ]
+        },
+        {
+          type: "separator",
+          margin: "md",
+          color: "#e7e5e4"
+        },
+        {
+          type: "box",
+          layout: "vertical",
+          margin: "md",
+          spacing: "sm",
+          contents: [
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "預訂商品", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.edition_name, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end", wrap: true }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "款式配色", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.color_name, color: "#b8863f", size: "sm", weight: "bold", flex: 7, align: "end" }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "數量", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.quantity + " 台", color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "預估總額", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: "NT$ " + Number(data.total_amount).toLocaleString(), color: "#b8863f", size: "lg", weight: "bold", flex: 7, align: "end" }
+              ]
+            }
+          ]
+        },
+        {
+          type: "separator",
+          margin: "md",
+          color: "#e7e5e4"
+        },
+        {
+          type: "box",
+          layout: "vertical",
+          margin: "md",
+          spacing: "sm",
+          contents: [
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "預訂人", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.buyer_name, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "聯絡手機", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.buyer_phone, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "配送地址", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.buyer_address, color: "#1c1917", size: "sm", flex: 7, align: "end", wrap: true }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "付款偏好", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.payment_method, color: "#22c55e", size: "sm", weight: "bold", flex: 7, align: "end" }
+              ]
+            },
+            {
+              type: "box",
+              layout: "horizontal",
+              contents: [
+                { type: "text", text: "備註留言", color: "#78716c", size: "sm", flex: 3 },
+                { type: "text", text: data.order_notes || "無", color: "#78716c", size: "sm", flex: 7, align: "end", wrap: true }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    footer: {
+      type: "box",
+      layout: "vertical",
+      backgroundColor: "#f5f5f4",
+      contents: [
+        {
+          type: "button",
+          style: "primary",
+          color: "#b8863f",
+          action: {
+            type: "uri",
+            label: "📊 打開 Google 試算表檢視",
+            uri: SpreadsheetApp.getActiveSpreadsheet().getUrl()
+          }
+        }
+      ]
+    }
+  };
+
+  const payload = {
+    to: LINE_CONFIG.userId,
+    messages: [
+      {
+        type: "flex",
+        altText: `🎧【MOTIF 新預約通知】${data.buyer_name} 已預訂 ${data.edition_name} (${data.color_name})`,
+        contents: flexBubble
+      }
+    ]
+  };
+
+  const options = {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + LINE_CONFIG.channelAccessToken
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(lineUrl, options);
+  Logger.log("LINE 推播回應: " + response.getContentText());
+}
+
+/**
+ * LINE 連線測試小工具 (可在 Apps Script 點擊執行測試)
+ */
+function testLineNotification() {
+  const dummyOrder = {
+    order_id: "PRE" + Date.now().toString().slice(-8),
+    created_at: Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy-MM-dd HH:mm:ss"),
+    product_edition: "pro",
+    edition_name: "高階版 (Pro ANC Edition)",
+    color: "cream",
+    color_name: "復古米白 (Vintage Cream)",
+    unit_price: 5990,
+    quantity: 1,
+    total_amount: 5990,
+    buyer_name: "LINE 測試好友",
+    buyer_phone: "0912-345-678",
+    buyer_address: "台北市信義區松仁路 100 號 8 樓",
+    buyer_email: "test@example.com",
+    payment_method: "黑貓貨到付款 (免預先刷卡)",
+    order_notes: "這是 LINE 機器人連線測試通知！"
+  };
+
+  sendLineNotification(dummyOrder);
+  Logger.log("✅ 已送出 LINE 測試訊息！請查看您的手機 LINE 是否有收到卡片。");
+}
+
+/**
+ * ★ 核心功能 2：發送預訂確認信給顧客 (預訂人)
  */
 function sendCustomerConfirmationEmail(data) {
   const customerEmail = data.buyer_email ? String(data.buyer_email).trim() : "";
@@ -411,7 +652,7 @@ function sendCustomerConfirmationEmail(data) {
 }
 
 /**
- * 輔助函式：發送新訂單通知信給試算表擁有者 (店長)
+ * ★ 輔助函式：發送新訂單通知信給試算表擁有者 (店長)
  */
 function notifyOwnerNewOrder(data) {
   const recipient = Session.getEffectiveUser().getEmail();
