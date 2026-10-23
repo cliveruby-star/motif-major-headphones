@@ -27,16 +27,16 @@
  */
 
 // ==============================================================================
-// ★ LINE 即時通知設定 (請填入您的金鑰)
+// ★ LINE 即時通知設定 (已填入您的專屬金鑰)
 // ==============================================================================
 const LINE_CONFIG = {
-  // 1. 請填入 LINE Messaging API 的 Channel Access Token (長字串)
-  channelAccessToken: "", 
+  // 1. LINE Messaging API 的 Channel Access Token
+  channelAccessToken: "4M207ui8aznYAGkMk/waFY/XjtL1wzrHTgpl8tIac2MQq4+e1EqPwrK8aWM43O8YGYapJgO8msftVF7xYpMtRqw97MN1z18d3fKA3IJAH1BD764wfHnYmWcMojYXLqERY2vXvWPHf83Lkgc/kR6LMQdB04t89/1O/w1cDnyilFU=", 
 
-  // 2. 請填入您的 LINE User ID (可在 LINE Developers 基本設定找到，以 U 開頭)
-  userId: "",
+  // 2. 您的 LINE User ID
+  userId: "Ue137485f49cf909439ba7ec20d2b826b",
 
-  // 3. 是否啟用 LINE 通知 (設為 true 啟用)
+  // 3. 啟用 LINE 通知
   enabled: true
 };
 
@@ -304,7 +304,7 @@ function doGet(e) {
 }
 
 /**
- * ★ 核心功能 1：發送 LINE 即時通知 (LINE Messaging API Flex Message)
+ * ★ 核心功能 1：發送 LINE 即時通知 (強制 UTF-8 編碼，手機鎖定畫面直接預覽)
  */
 function sendLineNotification(data) {
   if (!LINE_CONFIG.enabled || !LINE_CONFIG.channelAccessToken || !LINE_CONFIG.userId) {
@@ -314,182 +314,41 @@ function sendLineNotification(data) {
 
   const lineUrl = "https://api.line.me/v2/bot/message/push";
 
-  // 製作 MOTIF 黑金品牌風格的 Flex Message 卡片
-  const flexBubble = {
-    type: "bubble",
-    size: "mega",
-    header: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: "#1c1917",
-      paddingAll: "20px",
-      contents: [
-        {
-          type: "text",
-          text: "MOTIF SOUND LAB",
-          color: "#b8863f",
-          weight: "bold",
-          size: "xs",
-          letterSpacing: "2px"
-        },
-        {
-          type: "text",
-          text: "🎧 官網新預約通知！",
-          color: "#ffffff",
-          weight: "bold",
-          size: "xl",
-          margin: "sm"
-        }
-      ]
-    },
-    body: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: "#faf7f2",
-      paddingAll: "20px",
-      contents: [
-        {
-          type: "box",
-          layout: "horizontal",
-          contents: [
-            { type: "text", text: "預訂編號", color: "#78716c", size: "sm", flex: 3 },
-            { type: "text", text: data.order_id, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
-          ]
-        },
-        {
-          type: "separator",
-          margin: "md",
-          color: "#e7e5e4"
-        },
-        {
-          type: "box",
-          layout: "vertical",
-          margin: "md",
-          spacing: "sm",
-          contents: [
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "預訂商品", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.edition_name, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end", wrap: true }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "款式配色", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.color_name, color: "#b8863f", size: "sm", weight: "bold", flex: 7, align: "end" }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "數量", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.quantity + " 台", color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "預估總額", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: "NT$ " + Number(data.total_amount).toLocaleString(), color: "#b8863f", size: "lg", weight: "bold", flex: 7, align: "end" }
-              ]
-            }
-          ]
-        },
-        {
-          type: "separator",
-          margin: "md",
-          color: "#e7e5e4"
-        },
-        {
-          type: "box",
-          layout: "vertical",
-          margin: "md",
-          spacing: "sm",
-          contents: [
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "預訂人", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.buyer_name, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "聯絡手機", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.buyer_phone, color: "#1c1917", size: "sm", weight: "bold", flex: 7, align: "end" }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "配送地址", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.buyer_address, color: "#1c1917", size: "sm", flex: 7, align: "end", wrap: true }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "付款偏好", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.payment_method, color: "#22c55e", size: "sm", weight: "bold", flex: 7, align: "end" }
-              ]
-            },
-            {
-              type: "box",
-              layout: "horizontal",
-              contents: [
-                { type: "text", text: "備註留言", color: "#78716c", size: "sm", flex: 3 },
-                { type: "text", text: data.order_notes || "無", color: "#78716c", size: "sm", flex: 7, align: "end", wrap: true }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    footer: {
-      type: "box",
-      layout: "vertical",
-      backgroundColor: "#f5f5f4",
-      contents: [
-        {
-          type: "button",
-          style: "primary",
-          color: "#b8863f",
-          action: {
-            type: "uri",
-            label: "📊 打開 Google 試算表檢視",
-            uri: SpreadsheetApp.getActiveSpreadsheet().getUrl()
-          }
-        }
-      ]
-    }
-  };
+  const messageText = 
+    "🎧【MOTIF Sound Lab】官方新預約成立！\n" +
+    "━━━━━━━━━━━━━━━━━━\n" +
+    "📋 預訂編號：" + data.order_id + "\n" +
+    "⏰ 下單時間：" + data.created_at + "\n" +
+    "\n" +
+    "📦 預訂商品：" + data.edition_name + "\n" +
+    "🎨 款式配色：" + data.color_name + "\n" +
+    "🔢 預訂數量：" + data.quantity + " 台\n" +
+    "💰 預估金額：NT$ " + Number(data.total_amount).toLocaleString() + " (早鳥免運)\n" +
+    "🚚 付款方式：" + (data.payment_method || "黑貓貨到付款") + "\n" +
+    "━━━━━━━━━━━━━━━━━━\n" +
+    "👤 預訂姓名：" + data.buyer_name + "\n" +
+    "📞 聯絡手機：" + data.buyer_phone + "\n" +
+    "📍 配送地址：" + data.buyer_address + "\n" +
+    "✉️ 電子信箱：" + data.buyer_email + "\n" +
+    "📝 預約備註：" + (data.order_notes || "無") + "\n" +
+    "━━━━━━━━━━━━━━━━━━\n" +
+    "📊 請開啟 Google 試算表檢視出貨排程：\n" +
+    SpreadsheetApp.getActiveSpreadsheet().getUrl();
 
   const payload = {
     to: LINE_CONFIG.userId,
     messages: [
       {
-        type: "flex",
-        altText: `🎧【MOTIF 新預約通知】${data.buyer_name} 已預訂 ${data.edition_name} (${data.color_name})`,
-        contents: flexBubble
+        type: "text",
+        text: messageText
       }
     ]
   };
 
   const options = {
     method: "post",
+    contentType: "application/json; charset=UTF-8",
     headers: {
-      "Content-Type": "application/json",
       "Authorization": "Bearer " + LINE_CONFIG.channelAccessToken
     },
     payload: JSON.stringify(payload),
