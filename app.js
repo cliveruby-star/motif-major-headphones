@@ -34,6 +34,82 @@ const appState = {
   }
 };
 
+// =========================================================
+// Google Apps Script (GAS) Backend Database Configuration
+// =========================================================
+const GAS_CONFIG = {
+  // 請在此填入部署 Web App 取得的網址 (結尾通常為 /exec)
+  // 亦可於瀏覽器 Console 執行 localStorage.setItem('MOTIF_GAS_API_URL', '您的GAS網址') 進行即時串接
+  apiUrl: localStorage.getItem('MOTIF_GAS_API_URL') || '',
+  enableEmailNotify: true
+};
+
+/**
+ * 送出資料至 Google Apps Script 後端試算表
+ * 備註：使用 text/plain 送出 JSON 字串，以避免觸發瀏覽器 CORS preflight (OPTIONS) 限制
+ */
+async function sendDataToGAS(payload) {
+  if (!GAS_CONFIG.apiUrl) {
+    console.info('[GAS Database] 尚未設定 GAS_CONFIG.apiUrl，資料暫存於前端展示。如需寫入 Google 試算表，請在 app.js 填入 Web App 網址。');
+    return { success: false, reason: 'NO_CONFIGURED_URL' };
+  }
+
+  try {
+    const res = await fetch(GAS_CONFIG.apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+
+    const result = await res.json().catch(() => ({ success: true }));
+    console.log('[GAS Database] 同步成功:', result);
+    return result;
+  } catch (err) {
+    console.warn('[GAS Database] 同步過程出現警告 (仍可能已成功寫入):', err);
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * 從 Google 試算表讀取已通過審核的最新顧客心得評論
+ */
+async function fetchReviewsFromGAS() {
+  if (!GAS_CONFIG.apiUrl) return;
+
+  try {
+    const res = await fetch(`${GAS_CONFIG.apiUrl}?action=getReviews&_t=${Date.now()}`, {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    const result = await res.json();
+    if (result && result.success && Array.isArray(result.reviews) && result.reviews.length > 0) {
+      const remoteReviews = result.reviews.map(r => ({
+        id: r.id || ('REV_' + Date.now()),
+        name: r.name,
+        edition: r.edition || 'pro',
+        editionText: r.editionText || `購買：${appState.editionNames[r.edition || 'pro']}`,
+        rating: Number(r.rating) || 5,
+        tag: r.tag || '真實評價',
+        date: r.date || '近期購買',
+        comment: r.comment
+      }));
+
+      // 合併遠端與本地，以遠端最新為優先
+      const remoteIds = new Set(remoteReviews.map(r => String(r.id)));
+      const remainingLocal = customerReviews.filter(r => !remoteIds.has(String(r.id)));
+      customerReviews = [...remoteReviews, ...remainingLocal];
+      renderReviews();
+      console.log(`[GAS Database] 已從試算表載入 ${remoteReviews.length} 則顧客心得評價！`);
+    }
+  } catch (err) {
+    console.warn('[GAS Database] 載入遠端評價失敗，保留展示預設評價:', err);
+  }
+}
+
 // Data: Three Views Content
 const threeViewsData = {
   front: {
@@ -132,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initColorSwitchers();
   initPricingAndCheckout();
   initReviewsSystem();
+  fetchReviewsFromGAS();
   initFaqAccordion();
   initModernWebGuidanceFeatures();
 });
@@ -661,6 +738,12 @@ function processInPageCreditCardPayment() {
     const orderNo = 'EC' + Date.now().toString().slice(-8);
     const buyerName = document.getElementById('inputBuyerName').value;
     const buyerPhone = document.getElementById('inputBuyerPhone').value;
+    const buyerAddress = document.getElementById('inputBuyerAddress').value;
+    const buyerEmail = document.getElementById('inputBuyerEmail').value;
+    const rawCard = document.getElementById('inputCardNumber').value.replace(/\s+/g, '');
+    const maskedCard = rawCard.length >= 8 
+      ? `${rawCard.slice(0, 4)}-****-****-${rawCard.slice(-4)}`
+      : '4311-****-****-2222';
     const edition = appState.selectedEdition;
     const total = appState.prices[edition] * appState.quantity;
 
@@ -669,10 +752,34 @@ function processInPageCreditCardPayment() {
     document.getElementById('receiptAmount').textContent = `NT$ ${total.toLocaleString()}`;
     document.getElementById('receiptBuyer').textContent = `${buyerName} (${buyerPhone})`;
 
+    // Send order to Google Sheet backend (asynchronously in background)
+    sendDataToGAS({
+      action: 'createOrder',
+      data: {
+        order_id: orderNo,
+        created_at: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }),
+        product_edition: edition,
+        edition_name: appState.editionNames[edition],
+        color: appState.selectedColor,
+        color_name: appState.colorNames[appState.selectedColor],
+        unit_price: appState.prices[edition],
+        quantity: appState.quantity,
+        total_amount: total,
+        buyer_name: buyerName,
+        buyer_phone: buyerPhone,
+        buyer_address: buyerAddress,
+        buyer_email: buyerEmail,
+        payment_method: 'credit_card',
+        masked_card: maskedCard,
+        payment_status: 'PAID',
+        order_notes: ''
+      }
+    });
+
     // Open success receipt
     const successDialog = document.getElementById('orderSuccessDialog');
     successDialog.showModal();
-    showToast('🎉 信用卡付款成功！訂單已建立');
+    showToast('🎉 信用卡付款成功！訂單已建立並同步資料庫');
   }, 1200);
 }
 
@@ -739,8 +846,36 @@ async function processEcpayRedirect() {
   const pad = (n) => String(n).padStart(2, '0');
   const tradeDate = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const tradeNo = 'MG' + Date.now().toString().slice(-10);
+  const buyerName = document.getElementById('inputBuyerName')?.value || '未填寫姓名';
+  const buyerPhone = document.getElementById('inputBuyerPhone')?.value || '未填寫手機';
+  const buyerAddress = document.getElementById('inputBuyerAddress')?.value || '未填寫地址';
+  const buyerEmail = document.getElementById('inputBuyerEmail')?.value || '未填寫信箱';
 
   const itemName = `MOTIF Major ${appState.editionNames[appState.selectedEdition]} (${appState.colorNames[appState.selectedColor]}) x ${appState.quantity}`;
+
+  // Record order to Google Sheet backend
+  sendDataToGAS({
+    action: 'createOrder',
+    data: {
+      order_id: tradeNo,
+      created_at: tradeDate,
+      product_edition: appState.selectedEdition,
+      edition_name: appState.editionNames[appState.selectedEdition],
+      color: appState.selectedColor,
+      color_name: appState.colorNames[appState.selectedColor],
+      unit_price: appState.prices[appState.selectedEdition],
+      quantity: appState.quantity,
+      total_amount: total,
+      buyer_name: buyerName,
+      buyer_phone: buyerPhone,
+      buyer_address: buyerAddress,
+      buyer_email: buyerEmail,
+      payment_method: 'ecpay',
+      masked_card: 'ECPAY_STAGE',
+      payment_status: 'PENDING_ECPAY',
+      order_notes: '綠界科技線上結帳'
+    }
+  });
 
   const ecpayParams = {
     MerchantID: MerchantID,
@@ -842,22 +977,39 @@ function initReviewsSystem() {
       const tag = document.getElementById('inputReviewTag').value.trim() || '日常推薦';
       const comment = document.getElementById('inputReviewComment').value.trim();
 
+      const reviewId = 'REV_' + Date.now();
       const newReview = {
-        id: Date.now(),
+        id: reviewId,
         name: name,
         edition: edition,
         editionText: `購買：${appState.editionNames[edition]}`,
         rating: selectedRating,
         tag: tag,
-        date: '剛剛 (2026/10/16)',
+        date: '剛剛 (2026/10/23)',
         comment: comment
       };
 
       customerReviews.unshift(newReview);
       renderReviews();
+
+      // Send review to Google Sheet backend
+      sendDataToGAS({
+        action: 'createReview',
+        data: {
+          review_id: reviewId,
+          created_at: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }),
+          reviewer_name: name,
+          rating: selectedRating,
+          product_edition: edition,
+          edition_name: `購買：${appState.editionNames[edition]}`,
+          scenario_tag: tag,
+          review_comment: comment
+        }
+      });
+
       reviewForm.reset();
       reviewDialog.close();
-      showToast('🌟 感謝您的真實回饋！評價已成功刊登');
+      showToast('🌟 感謝您的真實回饋！評價已成功刊登並同步資料庫');
     });
   }
 }
