@@ -56,7 +56,7 @@
 
       <div class="nav-actions">
         <button class="btn-primary btn-open-checkout" data-edition="pro" aria-label="立即預訂高階版">
-          立即選購 NT$ 3,990 起
+          立即預訂 NT$ 3,990 起
         </button>
       </div>
     </div>
@@ -110,7 +110,7 @@
 
           <div class="hero-cta-group">
             <button class="btn-brass btn-open-checkout" data-edition="pro">
-              立即訂購高階版 (NT$ 5,990)
+              立即線上預約 (NT$ 5,990)
             </button>
             <a href="#views" class="btn-secondary">
               互動鑑賞三視圖 ↓
@@ -483,7 +483,7 @@
             </div>
 
             <button class="btn-secondary pricing-action-btn btn-open-checkout" data-edition="standard">
-              選購普通版 NT$ 3,990
+              立即預訂普通版 NT$ 3,990
             </button>
           </div>
 
@@ -546,7 +546,7 @@
             </div>
 
             <button class="btn-brass pricing-action-btn btn-open-checkout" data-edition="pro">
-              立即搶購高階版 NT$ 5,990
+              立即預訂高階版 NT$ 5,990
             </button>
           </div>
         </div>
@@ -778,11 +778,11 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- Dialog 1: Checkout & Credit Card / ECPay Modal (Modern Guidance)   -->
+  <!-- Dialog 1: Pre-Order Online Reservation Modal                      -->
   <!-- ================================================================= -->
   <dialog id="checkoutDialog" closedby="any" aria-labelledby="checkoutDialogTitle">
     <div class="modal-header">
-      <h3 id="checkoutDialogTitle">商品訂購與信用卡結帳</h3>
+      <h3 id="checkoutDialogTitle">MOTIF Major 官方線上預訂</h3>
       <button class="modal-close-btn modal-close-trigger" aria-label="關閉視窗">✕</button>
     </div>
 
@@ -793,9 +793,21 @@
           <img src="172724851626581.jpg" alt="耳機縮圖" class="summary-thumb" width="60" height="60">
           <div class="summary-info">
             <h4 id="summaryEditionName">高階版 (Pro ANC Edition)</h4>
-            <p id="summaryColorText">顏色：經典黑 (Classic Black) • 宅配免運</p>
+            <p id="summaryColorText">顏色：經典黑 (Classic Black) • 享免運費</p>
           </div>
           <div class="summary-price" id="summaryTotalPrice">NT$ 5,990</div>
+        </div>
+      </div>
+
+      <!-- Pre-Order Privilege Box -->
+      <div style="background: #fffdf9; border: 1px solid rgba(184, 134, 63, 0.35); border-radius: 8px; padding: 14px 16px; margin: 18px 0; font-size: 0.88rem; line-height: 1.6; color: #57534e;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-brass); margin-bottom: 6px;">
+          <span>✨ 官方線上預訂 • 優先席位保障</span>
+        </div>
+        <div style="font-size: 0.84rem;">
+          • <strong>免預先刷卡</strong>：送出此單即完成首批現貨登記，保障您的專屬出貨席位。<br>
+          • <strong>早鳥預訂禮遇</strong>：全館享 <strong>0 元黑貓宅急便免運費</strong>，並享有原廠保固與 7 天鑑賞期。<br>
+          • <strong>到貨付款保障</strong>：提供黑貓貨到付款、超商到貨付款或專人確認付款，安心無虞。
         </div>
       </div>
 
@@ -803,7 +815,7 @@
       <form id="checkoutForm" novalidate>
         <!-- Edition Selector inside modal -->
         <div class="form-group">
-          <label class="form-label">選擇購買版本 <span class="req">*</span></label>
+          <label class="form-label">選擇預訂版本 <span class="req">*</span></label>
           <div class="form-row-2">
             <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border-medium); border-radius: 8px; cursor: pointer;">
               <input type="radio" name="checkoutEditionRadio" value="standard">
@@ -816,7 +828,7 @@
             <label style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--accent-brass); border-radius: 8px; cursor: pointer; background: #fffcf8;">
               <input type="radio" name="checkoutEditionRadio" value="pro" checked>
               <div>
-                <strong style="font-size: 0.95rem;">高階版 (推薦)</strong>
+                <strong style="font-size: 0.95rem;">高階版 (熱銷推薦)</strong>
                 <div style="font-size: 0.8rem; color: var(--accent-brass);">NT$ 5,990 (主動降噪+無損)</div>
               </div>
             </label>
@@ -853,131 +865,66 @@
 
         <!-- Quantity Selector -->
         <div class="form-group">
-          <label class="form-label">訂購數量</label>
+          <label class="form-label">預訂數量</label>
           <div style="display: flex; align-items: center; gap: 16px;">
             <div style="display: inline-flex; align-items: center; border: 1px solid var(--border-medium); border-radius: 8px; overflow: hidden;">
               <button type="button" id="checkoutQtyMinus" style="padding: 8px 16px; background: var(--bg-warm-tint); font-size: 1.1rem;">−</button>
               <span id="checkoutQtyDisplay" style="padding: 8px 20px; font-weight: 700;">1</span>
               <button type="button" id="checkoutQtyPlus" style="padding: 8px 16px; background: var(--bg-warm-tint); font-size: 1.1rem;">+</button>
             </div>
-            <span style="font-size: 0.85rem; color: var(--success); font-weight: 600;">✓ 全館享 0 元免運費</span>
+            <span style="font-size: 0.85rem; color: var(--success); font-weight: 600;">✓ 早鳥預約享 0 元免運費</span>
           </div>
         </div>
 
         <!-- Recipient Information -->
-        <h4 style="font-size: 1.1rem; margin: 24px 0 12px; border-top: 1px solid var(--border-light); padding-top: 18px;">收件人配送資訊</h4>
+        <h4 style="font-size: 1.1rem; margin: 24px 0 12px; border-top: 1px solid var(--border-light); padding-top: 18px;">預訂人與到貨配送資訊</h4>
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label" for="inputBuyerName">收件人姓名 <span class="req">*</span></label>
+            <label class="form-label" for="inputBuyerName">預訂人姓名 <span class="req">*</span></label>
             <input type="text" id="inputBuyerName" class="form-control" placeholder="例：王小明" required autocomplete="name">
-            <span class="field-error-msg">請填寫收件人姓名</span>
+            <span class="field-error-msg">請填寫預訂人姓名</span>
           </div>
           <div class="form-group">
-            <label class="form-label" for="inputBuyerPhone">聯絡手機 <span class="req">*</span></label>
+            <label class="form-label" for="inputBuyerPhone">聯絡手機 (通知到貨) <span class="req">*</span></label>
             <input type="tel" id="inputBuyerPhone" class="form-control" placeholder="0912-345-678" pattern="^09\d{8}$" required autocomplete="tel">
             <span class="field-error-msg">請填寫正確台灣手機號碼 (09xxxxxxxx)</span>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="inputBuyerAddress">收件地址 <span class="req">*</span></label>
+          <label class="form-label" for="inputBuyerAddress">預定配送地址 <span class="req">*</span></label>
           <input type="text" id="inputBuyerAddress" class="form-control" placeholder="例：台北市信義區松仁路 100 號 8 樓" required autocomplete="street-address">
           <span class="field-error-msg">請填寫完整的收件地址</span>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="inputBuyerEmail">電子信箱 (接收出貨明細) <span class="req">*</span></label>
+          <label class="form-label" for="inputBuyerEmail">電子信箱 (接收預訂成功確認) <span class="req">*</span></label>
           <input type="email" id="inputBuyerEmail" class="form-control" placeholder="name@example.com" required autocomplete="email">
           <span class="field-error-msg">請輸入正確的 Email 地址</span>
         </div>
 
-        <!-- Payment Gateway Switcher -->
-        <h4 style="font-size: 1.1rem; margin: 24px 0 14px; border-top: 1px solid var(--border-light); padding-top: 18px;">選擇金流付款方式</h4>
-        <div class="gateway-tabs">
-          <button type="button" class="gateway-tab-btn active" data-gateway="card">
-            <span>💳 信用卡極速結帳</span>
-          </button>
-          <button type="button" class="gateway-tab-btn" data-gateway="ecpay">
-            <span>🟢 綠界科技 ECPay</span>
-          </button>
-        </div>
-
-        <!-- Gateway 1: In-Page Credit Card with 3D Preview -->
-        <div id="cardPaymentSection">
-          <!-- 3D Virtual Credit Card Preview -->
-          <div class="card-preview-wrap">
-            <div class="virtual-card" id="virtualCreditCard">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-chip"></div>
-                <div class="card-type-logo">MOTIF CARD</div>
-              </div>
-
-              <div class="card-number-display" id="cardPreviewNumber">•••• •••• •••• ••••</div>
-
-              <div class="card-bottom-row">
-                <div>
-                  <div style="font-size: 0.65rem; color: #a8a29e;">CARDHOLDER</div>
-                  <div class="card-holder-name" id="cardPreviewName">YOUR NAME</div>
-                </div>
-                <div>
-                  <div style="font-size: 0.65rem; color: #a8a29e;">EXPIRES</div>
-                  <div class="card-expiry-val" id="cardPreviewExp">MM/YY</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label" for="inputCardNumber">信用卡卡號 <span class="req">*</span></label>
-            <input type="text" id="inputCardNumber" class="form-control" placeholder="4311 9522 2222 2222" maxlength="19" required inputmode="numeric">
-            <span class="field-error-msg">請輸入 16 位有效信用卡號</span>
+            <label class="form-label" for="selectPaymentPreference">到貨付款偏好</label>
+            <select id="selectPaymentPreference" class="form-control">
+              <option value="貨到付款">黑貓貨到付款 (配送時交付司機)</option>
+              <option value="專人電話聯繫確認">專人電話/簡訊聯繫確認後付款</option>
+              <option value="ATM銀行轉帳">ATM 虛擬帳號/銀行轉帳</option>
+            </select>
           </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label class="form-label" for="inputCardHolder">持卡人姓名 (英文拼音) <span class="req">*</span></label>
-              <input type="text" id="inputCardHolder" class="form-control" placeholder="WANG HSIAO MING" required>
-              <span class="field-error-msg">請輸入持卡人英文姓名</span>
-            </div>
-            <div class="form-row-2" style="gap: 10px;">
-              <div class="form-group">
-                <label class="form-label" for="inputCardExp">效期 <span class="req">*</span></label>
-                <input type="text" id="inputCardExp" class="form-control" placeholder="MM/YY" maxlength="5" required>
-                <span class="field-error-msg">請填寫有效月份</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="inputCardCvc">安全碼 <span class="req">*</span></label>
-                <input type="password" id="inputCardCvc" class="form-control" placeholder="CVC" maxlength="3" required inputmode="numeric">
-                <span class="field-error-msg">3 碼</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Gateway 2: ECPay Stage Direct Integration -->
-        <div id="ecpayPaymentSection" style="display: none;">
-          <div class="ecpay-notice-box">
-            <div><strong>🟢 綠界科技 ECPay 官方收銀台串接</strong></div>
-            <p>
-              按下下方按鈕後，系統將依據綠界 <code>AioCheckOut/V5</code> 規範以 SHA-256 即時計算 <code>CheckMacValue</code> 檢查碼，並在新分頁開啟綠界官方收銀台。
-            </p>
-            <div style="background: rgba(255, 255, 255, 0.7); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem;">
-              <strong>綠界測試特店測試卡號：</strong><br>
-              卡號：<code>4311-9522-2222-2222</code> | 有效月年：大於當前日期 | 安全碼：<code>222</code>
-            </div>
-            <p style="margin: 0; font-size: 0.8rem; color: #555;">
-              結帳金額：<strong id="ecpayTotalNotice" style="color: var(--accent-brass);">NT$ 5,990</strong>
-            </p>
+          <div class="form-group">
+            <label class="form-label" for="inputOrderNotes">預約備註 (選填)</label>
+            <input type="text" id="inputOrderNotes" class="form-control" placeholder="例：平日白天配送、放管理室等">
           </div>
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" class="btn-brass" id="checkoutSubmitBtn" style="width: 100%; margin-top: 12px; font-size: 1.05rem;">
-          <span id="checkoutSubmitBtnText">確認付款 NT$ 5,990</span>
+        <button type="submit" class="btn-brass" id="checkoutSubmitBtn" style="width: 100%; margin-top: 14px; font-size: 1.05rem; padding: 14px;">
+          <span id="checkoutSubmitBtnText">確認送出預訂單 (預估金額 NT$ 5,990)</span>
         </button>
 
         <p style="text-align: center; font-size: 0.78rem; color: var(--text-light); margin-top: 12px;">
-          🔒 256-Bit SSL 銀行級加密 • 7 天猶豫期保證 • 台灣原廠出貨
+          🔒 線上免預刷卡 • 預約單資料將加密自動寫入官方試算表 • 享 7 天猶豫期保證
         </p>
       </form>
     </div>
@@ -989,39 +936,43 @@
   <dialog id="orderSuccessDialog" closedby="any" aria-labelledby="successDialogTitle">
     <div class="modal-body" style="padding: 40px 32px;">
       <div class="success-check-icon">✓</div>
-      <h3 class="success-title" id="successDialogTitle">付款成功！訂單已成立</h3>
-      <p class="success-subtitle">感謝您的購買，我們已收到您的款項並著手準備出貨。</p>
+      <h3 class="success-title" id="successDialogTitle">預訂登記成功！</h3>
+      <p class="success-subtitle">感謝您的預約，系統已成功將您的預訂資料即時寫入官方資料庫，我們將為您優先保留首批現貨。</p>
 
       <table class="receipt-table">
         <tbody>
           <tr>
-            <td>訂單編號</td>
-            <td id="receiptOrderNo">EC202610168892</td>
+            <td>預訂編號</td>
+            <td id="receiptOrderNo">PRE202610230001</td>
           </tr>
           <tr>
-            <td>購買商品</td>
-            <td id="receiptEdition">高階版 (Pro ANC Edition) × 1</td>
+            <td>預訂商品</td>
+            <td id="receiptEdition">高階版 (Pro ANC Edition) [復古米白] × 1</td>
           </tr>
           <tr>
             <td>付款方式</td>
-            <td>信用卡在線一次付清 (SSL 256-Bit)</td>
+            <td id="receiptPayment">貨到付款 (免預先刷卡)</td>
           </tr>
           <tr>
-            <td>訂購收件人</td>
+            <td>預訂聯絡人</td>
             <td id="receiptBuyer">王小明 (0912-345-678)</td>
           </tr>
           <tr>
-            <td>預計出貨時間</td>
-            <td>今日 16:00 前安排黑貓宅急便寄出</td>
+            <td>預訂配送地址</td>
+            <td id="receiptAddress">台北市信義區松仁路 100 號 8 樓</td>
           </tr>
           <tr>
-            <td>結帳總金額</td>
+            <td>預計到貨時程</td>
+            <td>首批到貨即刻安排寄送，出貨前將發送簡訊通知</td>
+          </tr>
+          <tr>
+            <td>預估結算金額</td>
             <td id="receiptAmount" style="color: var(--accent-brass); font-size: 1.25rem;">NT$ 5,990</td>
           </tr>
         </tbody>
       </table>
 
-      <button class="btn-primary modal-close-trigger" style="width: 100%;">
+      <button class="btn-primary modal-close-trigger" style="width: 100%; margin-top: 20px;">
         完成並返回首頁
       </button>
     </div>

@@ -556,46 +556,20 @@ function initPricingAndCheckout() {
     });
   });
 
-  // Gateway toggle
-  const gatewayBtns = document.querySelectorAll('.gateway-tab-btn');
-  const cardSection = document.getElementById('cardPaymentSection');
-  const ecpaySection = document.getElementById('ecpayPaymentSection');
-
-  gatewayBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const gw = btn.dataset.gateway;
-      appState.activeGateway = gw;
-      gatewayBtns.forEach(b => b.classList.toggle('active', b.dataset.gateway === gw));
-
-      if (gw === 'card') {
-        cardSection.style.display = 'block';
-        ecpaySection.style.display = 'none';
-      } else {
-        cardSection.style.display = 'none';
-        ecpaySection.style.display = 'block';
-      }
-    });
-  });
-
-  // Virtual Credit Card input synchronizer
-  initCreditCardInputs();
-
-  // In-Page Checkout Form Submission
+  // In-Page Pre-Order Form Submission
   const checkoutForm = document.getElementById('checkoutForm');
-  checkoutForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+  if (checkoutForm) {
+    checkoutForm.addEventListener('submit', (e) => {
+      e.preventDefault();
 
-    if (!checkoutForm.checkValidity()) {
-      checkoutForm.reportValidity();
-      return;
-    }
+      if (!checkoutForm.checkValidity()) {
+        checkoutForm.reportValidity();
+        return;
+      }
 
-    if (appState.activeGateway === 'card') {
-      processInPageCreditCardPayment();
-    } else {
-      processEcpayRedirect();
-    }
-  });
+      processOnlineReservation();
+    });
+  }
 
   // Modal Close buttons
   document.querySelectorAll('.modal-close-trigger').forEach(btn => {
@@ -638,148 +612,88 @@ function updateOrderSummary() {
   const ecpayTotalNotice = document.getElementById('ecpayTotalNotice');
 
   if (nameEl) nameEl.textContent = appState.editionNames[edition];
-  if (colorEl) colorEl.textContent = `顏色：${appState.colorNames[color]} • 宅配免運`;
+  if (colorEl) colorEl.textContent = `顏色：${appState.colorNames[color]} • 享免運費`;
   if (priceEl) priceEl.textContent = `NT$ ${total.toLocaleString()}`;
-  if (submitBtnText) submitBtnText.textContent = `確認付款 NT$ ${total.toLocaleString()}`;
-  if (ecpayTotalNotice) ecpayTotalNotice.textContent = `NT$ ${total.toLocaleString()}`;
+  if (submitBtnText) submitBtnText.textContent = `確認送出預訂單 (預估金額 NT$ ${total.toLocaleString()})`;
 }
 
-// 3D Credit Card Dynamic Formatting & Luhn Algorithm
-function initCreditCardInputs() {
-  const cardNumInput = document.getElementById('inputCardNumber');
-  const cardHolderInput = document.getElementById('inputCardHolder');
-  const cardExpInput = document.getElementById('inputCardExp');
-  const cardCvcInput = document.getElementById('inputCardCvc');
-
-  const previewCard = document.getElementById('virtualCreditCard');
-  const previewNum = document.getElementById('cardPreviewNumber');
-  const previewName = document.getElementById('cardPreviewName');
-  const previewExp = document.getElementById('cardPreviewExp');
-
-  if (!cardNumInput) return;
-
-  // Auto format 16-digit card number with spaces
-  cardNumInput.addEventListener('input', (e) => {
-    let val = e.target.value.replace(/\D/g, '').substring(0, 16);
-    let formatted = val.match(/.{1,4}/g)?.join(' ') || '';
-    e.target.value = formatted;
-    previewNum.textContent = formatted || '•••• •••• •••• ••••';
-
-    // Luhn algorithm check
-    if (val.length === 16) {
-      const isLuhnValid = checkLuhn(val);
-      if (!isLuhnValid) {
-        cardNumInput.setCustomValidity('請輸入有效的信用卡卡號');
-      } else {
-        cardNumInput.setCustomValidity('');
-      }
-    } else {
-      cardNumInput.setCustomValidity('');
-    }
-  });
-
-  // Card holder name
-  cardHolderInput.addEventListener('input', (e) => {
-    previewName.textContent = e.target.value.toUpperCase() || 'YOUR NAME';
-  });
-
-  // Card Expiration auto slash MM/YY
-  cardExpInput.addEventListener('input', (e) => {
-    let val = e.target.value.replace(/\D/g, '').substring(0, 4);
-    if (val.length >= 3) {
-      val = val.substring(0, 2) + '/' + val.substring(2, 4);
-    }
-    e.target.value = val;
-    previewExp.textContent = val || 'MM/YY';
-  });
-
-  // Flip card on CVC focus
-  cardCvcInput.addEventListener('focus', () => {
-    previewCard.classList.add('flipped');
-  });
-  cardCvcInput.addEventListener('blur', () => {
-    previewCard.classList.remove('flipped');
-  });
-}
-
-function checkLuhn(cardNo) {
-  let sum = 0;
-  let alternate = false;
-  for (let i = cardNo.length - 1; i >= 0; i--) {
-    let n = parseInt(cardNo.charAt(i), 10);
-    if (alternate) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    sum += n;
-    alternate = !alternate;
-  }
-  return (sum % 10 === 0);
-}
-
-// Process In-Page Simulated Payment
-function processInPageCreditCardPayment() {
+// Process Online Pre-Order Reservation
+function processOnlineReservation() {
   const submitBtn = document.getElementById('checkoutSubmitBtn');
   const submitText = document.getElementById('checkoutSubmitBtnText');
-  const originalText = submitText.textContent;
+  const originalText = submitText ? submitText.textContent : '確認送出預訂單';
 
-  submitBtn.disabled = true;
-  submitText.textContent = '安全加密授權中...';
+  if (submitBtn) submitBtn.disabled = true;
+  if (submitText) submitText.textContent = '資料加密儲存至試算表中...';
+
+  // Generate Pre-order reservation ID
+  const orderNo = 'PRE' + Date.now().toString().slice(-8);
+  const buyerName = document.getElementById('inputBuyerName')?.value.trim() || '';
+  const buyerPhone = document.getElementById('inputBuyerPhone')?.value.trim() || '';
+  const buyerAddress = document.getElementById('inputBuyerAddress')?.value.trim() || '';
+  const buyerEmail = document.getElementById('inputBuyerEmail')?.value.trim() || '';
+  const paymentPref = document.getElementById('selectPaymentPreference')?.value || '貨到付款';
+  const orderNotes = document.getElementById('inputOrderNotes')?.value.trim() || '無特殊備註';
+
+  const edition = appState.selectedEdition;
+  const total = appState.prices[edition] * appState.quantity;
+
+  // Prepare Pre-Order Data Payload
+  const preOrderData = {
+    action: 'createOrder',
+    data: {
+      order_id: orderNo,
+      created_at: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }),
+      product_edition: edition,
+      edition_name: appState.editionNames[edition],
+      color: appState.selectedColor,
+      color_name: appState.colorNames[appState.selectedColor],
+      unit_price: appState.prices[edition],
+      quantity: appState.quantity,
+      total_amount: total,
+      buyer_name: buyerName,
+      buyer_phone: buyerPhone,
+      buyer_address: buyerAddress,
+      buyer_email: buyerEmail,
+      payment_method: paymentPref + ' (免預先刷卡)',
+      masked_card: '線上預訂免刷卡',
+      payment_status: '預訂成功 (到貨付款)',
+      shipping_status: 'PENDING',
+      order_notes: orderNotes
+    }
+  };
+
+  // Send order directly to Google Sheet Web App
+  sendDataToGAS(preOrderData);
 
   setTimeout(() => {
-    submitBtn.disabled = false;
-    submitText.textContent = originalText;
+    if (submitBtn) submitBtn.disabled = false;
+    if (submitText) submitText.textContent = originalText;
 
     // Close checkout dialog
-    document.getElementById('checkoutDialog').close();
+    const checkoutDialog = document.getElementById('checkoutDialog');
+    if (checkoutDialog) checkoutDialog.close();
 
-    // Prepare Receipt Data
-    const orderNo = 'EC' + Date.now().toString().slice(-8);
-    const buyerName = document.getElementById('inputBuyerName').value;
-    const buyerPhone = document.getElementById('inputBuyerPhone').value;
-    const buyerAddress = document.getElementById('inputBuyerAddress').value;
-    const buyerEmail = document.getElementById('inputBuyerEmail').value;
-    const rawCard = document.getElementById('inputCardNumber').value.replace(/\s+/g, '');
-    const maskedCard = rawCard.length >= 8 
-      ? `${rawCard.slice(0, 4)}-****-****-${rawCard.slice(-4)}`
-      : '4311-****-****-2222';
-    const edition = appState.selectedEdition;
-    const total = appState.prices[edition] * appState.quantity;
+    // Fill receipt dialog
+    const orderNoEl = document.getElementById('receiptOrderNo');
+    const editionEl = document.getElementById('receiptEdition');
+    const paymentEl = document.getElementById('receiptPayment');
+    const buyerEl = document.getElementById('receiptBuyer');
+    const addressEl = document.getElementById('receiptAddress');
+    const amountEl = document.getElementById('receiptAmount');
 
-    document.getElementById('receiptOrderNo').textContent = orderNo;
-    document.getElementById('receiptEdition').textContent = `${appState.editionNames[edition]} [${appState.colorNames[appState.selectedColor]}] × ${appState.quantity}`;
-    document.getElementById('receiptAmount').textContent = `NT$ ${total.toLocaleString()}`;
-    document.getElementById('receiptBuyer').textContent = `${buyerName} (${buyerPhone})`;
-
-    // Send order to Google Sheet backend (asynchronously in background)
-    sendDataToGAS({
-      action: 'createOrder',
-      data: {
-        order_id: orderNo,
-        created_at: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }),
-        product_edition: edition,
-        edition_name: appState.editionNames[edition],
-        color: appState.selectedColor,
-        color_name: appState.colorNames[appState.selectedColor],
-        unit_price: appState.prices[edition],
-        quantity: appState.quantity,
-        total_amount: total,
-        buyer_name: buyerName,
-        buyer_phone: buyerPhone,
-        buyer_address: buyerAddress,
-        buyer_email: buyerEmail,
-        payment_method: 'credit_card',
-        masked_card: maskedCard,
-        payment_status: 'PAID',
-        order_notes: ''
-      }
-    });
+    if (orderNoEl) orderNoEl.textContent = orderNo;
+    if (editionEl) editionEl.textContent = `${appState.editionNames[edition]} [${appState.colorNames[appState.selectedColor]}] × ${appState.quantity}`;
+    if (paymentEl) paymentEl.textContent = paymentPref + ' (免預先刷卡)';
+    if (buyerEl) buyerEl.textContent = `${buyerName} (${buyerPhone})`;
+    if (addressEl) addressEl.textContent = buyerAddress;
+    if (amountEl) amountEl.textContent = `NT$ ${total.toLocaleString()}`;
 
     // Open success receipt
     const successDialog = document.getElementById('orderSuccessDialog');
-    successDialog.showModal();
-    showToast('🎉 信用卡付款成功！訂單已建立並同步資料庫');
-  }, 1200);
+    if (successDialog) successDialog.showModal();
+    showToast('🎉 官方預訂成功！資料已同步寫入 Google 試算表');
+  }, 700);
 }
 
 /* ========================================================= */
